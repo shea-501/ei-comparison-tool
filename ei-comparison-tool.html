@@ -6,12 +6,9 @@
 <title>EI License Comparison Tool</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-/* ============================================================
-   CONFIG — edit fonts, colors, branding here
-   ============================================================ */
 :root {
-  --brand:#1a1a2e;--accent:#16213e;--highlight:#0f3460;
-  --green:#1d9e75;--amber:#ba7517;--red:#e24b4a;--blue:#378add;
+  --brand:#1a1a2e;--highlight:#0f3460;
+  --green:#1d9e75;--amber:#ba7517;--red:#e24b4a;--blue:#378add;--orange:#d46a1a;
   --bg:#f7f7f5;--surface:#ffffff;--border:#e2e0d8;--border-mid:#c8c5bc;
   --text:#1a1a1a;--text-muted:#6b6b6b;--text-faint:#9e9e9e;
   --radius:8px;--radius-lg:12px;
@@ -19,330 +16,316 @@
 }
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
-html{font-size:14px}
-body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
 .header{background:var(--brand);color:#fff;padding:16px 32px;display:flex;align-items:center;gap:12px}
-.header-logo{width:28px;height:28px;background:var(--green);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#fff}
-.header-title{font-size:15px;font-weight:600;letter-spacing:-.01em}
+.header-logo{width:28px;height:28px;background:var(--green);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600}
+.header-title{font-size:15px;font-weight:600}
 .header-sub{font-size:11px;color:rgba(255,255,255,.5);margin-top:1px}
 .header-version{margin-left:auto;font-size:10px;color:rgba(255,255,255,.35);font-family:var(--font-mono)}
-.main{max-width:1200px;margin:0 auto;padding:24px 24px 60px}
+.main{max-width:1280px;margin:0 auto;padding:24px 24px 60px}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px}
 .card-title{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px}
 .upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .drop-zone{border:1.5px dashed var(--border-mid);border-radius:var(--radius);padding:20px 16px;text-align:center;cursor:pointer;transition:background .15s,border-color .15s;background:var(--bg)}
 .drop-zone:hover{background:#eeecea;border-color:var(--highlight)}
 .drop-zone.has-file{border-style:solid;border-color:var(--green);background:#f0fbf7}
-.drop-zone .dz-icon{font-size:22px;margin-bottom:6px}
-.drop-zone .dz-label{font-size:13px;color:var(--text-muted);font-weight:500}
-.drop-zone .dz-sub{font-size:11px;color:var(--text-faint);margin-top:3px}
-.drop-zone .dz-file{font-size:11px;color:var(--green);margin-top:6px;font-weight:500;word-break:break-all}
+.dz-icon{font-size:22px;margin-bottom:6px}
+.dz-label{font-size:13px;color:var(--text-muted);font-weight:500}
+.dz-sub{font-size:11px;color:var(--text-faint);margin-top:3px}
+.dz-file{font-size:11px;color:var(--green);margin-top:6px;font-weight:500;word-break:break-all}
 .suppl-label{font-size:11px;color:var(--text-muted);margin:14px 0 8px}
 .suppl-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .suppl-zone{border:1px dashed var(--border);border-radius:var(--radius);padding:12px 8px;text-align:center;cursor:pointer;font-size:11px;color:var(--text-faint);transition:background .15s;min-height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
 .suppl-zone:hover{background:#eeecea}
 .suppl-zone.has-file{border-color:var(--green);color:var(--green);background:#f0fbf7}
-.suppl-zone .sz-name{font-size:10px;font-weight:500;word-break:break-all}
+.sz-name{font-size:10px;font-weight:500;word-break:break-all}
 .config-section{display:none}
-.map-grid{display:grid;grid-template-columns:1fr 32px 1fr;gap:8px;align-items:center;margin-bottom:10px}
-.map-arrow{text-align:center;color:var(--text-faint);font-size:18px}
-.map-label{font-size:10px;color:var(--text-faint);margin-bottom:4px}
-select{width:100%;font-size:12px;font-family:var(--font);padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b6b6b'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;cursor:pointer}
+.map-grid{display:grid;grid-template-columns:1fr 28px 1fr;gap:6px;align-items:center;margin-bottom:8px}
+.map-arrow{text-align:center;color:var(--text-faint);font-size:16px}
+.map-label{font-size:10px;color:var(--text-faint);margin-bottom:3px}
+select{width:100%;font-size:12px;font-family:var(--font);padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b6b6b'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;cursor:pointer}
 select:focus{outline:none;border-color:var(--highlight)}
-.threshold-row{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+.threshold-row{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
 .threshold-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted)}
-input[type=range]{width:100px;accent-color:var(--highlight)}
+input[type=range]{width:90px;accent-color:var(--highlight)}
+input[type=number]{width:70px;font-size:12px;font-family:var(--font);padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);text-align:center}
 .threshold-val{font-weight:600;font-size:12px;min-width:34px;color:var(--text)}
-.divider{height:1px;background:var(--border);margin:16px 0}
-.run-btn{background:var(--brand);color:#fff;border:none;border-radius:var(--radius);padding:10px 24px;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;letter-spacing:-.01em;transition:background .15s}
+.divider{height:1px;background:var(--border);margin:14px 0}
+.run-btn{background:var(--brand);color:#fff;border:none;border-radius:var(--radius);padding:10px 24px;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;transition:background .15s}
 .run-btn:hover{background:var(--highlight)}
 .results-section{display:none}
-.summary-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
-.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center}
-.stat-num{font-size:26px;font-weight:600;line-height:1}
+.summary-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center}
+.stat-num{font-size:24px;font-weight:600;line-height:1}
 .stat-lbl{font-size:10px;color:var(--text-muted);margin-top:4px;text-transform:uppercase;letter-spacing:.04em}
 .results-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
 .tabs{display:flex;border-bottom:1px solid var(--border);background:var(--bg)}
-.tab{padding:10px 18px;font-size:12px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-muted);display:flex;align-items:center;gap:6px;transition:color .15s}
+.tab{padding:10px 16px;font-size:12px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-muted);display:flex;align-items:center;gap:6px;transition:color .15s}
 .tab.active{color:var(--text);border-bottom-color:var(--brand);background:var(--surface)}
 .tab:hover:not(.active){color:var(--text)}
 .badge{display:inline-block;font-size:10px;padding:1px 7px;border-radius:99px;font-weight:600}
 .badge-new{background:#dbeeff;color:#185fa5}
 .badge-removed{background:#fde8e8;color:#a32d2d}
 .badge-changed{background:#fef0d6;color:#854f0b}
-.toolbar{padding:8px 12px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;background:var(--bg)}
-.toolbar input[type=text]{font-size:12px;font-family:var(--font);padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);width:220px;background:var(--surface)}
+.badge-expiring{background:#fff0e0;color:#d4600a}
+.toolbar{padding:8px 12px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;background:var(--bg);flex-wrap:wrap}
+.toolbar input[type=text]{font-size:12px;font-family:var(--font);padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);width:200px;background:var(--surface)}
 .toolbar input[type=text]:focus{outline:none;border-color:var(--highlight)}
-.toolbar select{width:auto;font-size:12px;padding:6px 28px 6px 10px}
+.toolbar select{width:auto;padding:6px 24px 6px 8px}
 .tab-content{display:none}
 .tab-content.active{display:block}
-.tbl-wrap{overflow-x:auto;max-height:460px;overflow-y:auto}
+.tbl-wrap{overflow-x:auto;max-height:480px;overflow-y:auto}
 table{width:100%;border-collapse:collapse;font-size:12px}
-th{position:sticky;top:0;z-index:1;background:var(--bg);padding:8px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);white-space:nowrap}
-td{padding:7px 12px;border-bottom:1px solid var(--border);vertical-align:top;word-break:break-word;max-width:220px;line-height:1.4}
+th{position:sticky;top:0;z-index:1;background:var(--bg);padding:7px 10px;text-align:left;font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:6px 10px;border-bottom:1px solid var(--border);vertical-align:top;word-break:break-word;max-width:200px;line-height:1.4}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:#f9f8f6}
 .diff-old{text-decoration:line-through;color:var(--red);font-size:11px;display:block}
 .diff-new{color:var(--green);font-size:11px;font-weight:500;display:block}
 .translated{font-size:10px;color:var(--blue);font-style:italic;display:block;margin-top:1px}
-.meter-wrap{display:flex;align-items:center;gap:6px}
-.meter{height:5px;border-radius:3px;background:var(--border);flex:1;min-width:50px;overflow:hidden}
+.meter-wrap{display:flex;align-items:center;gap:5px}
+.meter{height:5px;border-radius:3px;background:var(--border);flex:1;min-width:44px;overflow:hidden}
 .meter-fill{height:100%;border-radius:3px}
 .meter-pct{font-size:11px;font-weight:600;min-width:30px;text-align:right;font-family:var(--font-mono)}
+.alias-tag{font-size:10px;color:var(--blue);font-style:italic;display:block}
 .num-match{color:var(--green);font-size:11px;font-weight:600}
 .num-mismatch{color:var(--red);font-size:11px;font-weight:600}
 .match-ok{color:var(--green);font-size:11px}
 .status-ok{color:var(--green);font-size:11px}
 .status-changed{color:var(--red);font-size:11px;font-weight:500}
-.status-note{font-size:10px;color:var(--text-faint);font-style:italic}
-.enrich-item{font-size:11px;margin-bottom:3px}
+.exp-hard{color:var(--red);font-weight:600;font-size:11px}
+.exp-warn{color:var(--amber);font-weight:600;font-size:11px}
+.exp-soft{color:var(--orange);font-size:11px}
+.exp-ok{color:var(--green);font-size:11px}
+.enrich-item{font-size:11px;margin-bottom:2px}
 .enrich-key{color:var(--text-faint);font-size:10px}
+.info-pill{display:inline-block;font-size:10px;padding:1px 7px;border-radius:99px;background:#e8f2fb;color:#185fa5;margin-left:5px;font-weight:500}
 .footer-bar{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--border);background:var(--bg)}
 .footer-bar button{font-size:12px;font-family:var(--font);font-weight:500;padding:7px 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);cursor:pointer;transition:background .15s}
 .footer-bar button:hover{background:#eeecea}
-.footer-bar .btn-primary{background:var(--brand);color:#fff;border-color:var(--brand)}
-.footer-bar .btn-primary:hover{background:var(--highlight);border-color:var(--highlight)}
+.btn-primary{background:var(--brand)!important;color:#fff!important;border-color:var(--brand)!important}
+.btn-primary:hover{background:var(--highlight)!important;border-color:var(--highlight)!important}
 .empty-state{padding:40px;text-align:center;color:var(--text-faint);font-size:13px}
-.info-pill{display:inline-block;font-size:10px;padding:2px 8px;border-radius:99px;background:#e8f2fb;color:#185fa5;margin-left:6px;font-weight:500}
 </style>
 </head>
 <body>
-
 <div class="header">
   <div class="header-logo">EI</div>
   <div>
     <div class="header-title">License Comparison Tool</div>
     <div class="header-sub">Emerald Intelligence — Ohio Cannabis DB</div>
   </div>
-  <div class="header-version">v5.0</div>
+  <div class="header-version">v6.0</div>
 </div>
-
 <div class="main">
 
-  <div class="card">
-    <div class="card-title">Upload files</div>
-    <div class="upload-grid">
-      <div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;font-weight:500">EI Database (base)</div>
-        <div class="drop-zone" id="dz-ei" onclick="document.getElementById('f-ei').click()">
-          <div class="dz-icon">📂</div>
-          <div class="dz-label">Click or drop file</div>
-          <div class="dz-sub">Trevor export — .xlsx or .csv</div>
-          <div class="dz-file" id="fn-ei"></div>
-        </div>
-        <input type="file" id="f-ei" accept=".csv,.xlsx" style="display:none">
+<!-- UPLOAD -->
+<div class="card">
+  <div class="card-title">Upload files</div>
+  <div class="upload-grid">
+    <div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;font-weight:500">EI Database (base)</div>
+      <div class="drop-zone" id="dz-ei" onclick="document.getElementById('f-ei').click()">
+        <div class="dz-icon">📂</div><div class="dz-label">Click or drop file</div>
+        <div class="dz-sub">Full Trevor export — .xlsx or .csv</div>
+        <div class="dz-file" id="fn-ei"></div>
       </div>
-      <div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;font-weight:500">Regulator — Primary file</div>
-        <div class="drop-zone" id="dz-reg" onclick="document.getElementById('f-reg').click()">
-          <div class="dz-icon">📂</div>
-          <div class="dz-label">Click or drop file</div>
-          <div class="dz-sub">AllActivities or similar — .xlsx or .csv</div>
-          <div class="dz-file" id="fn-reg"></div>
-        </div>
-        <input type="file" id="f-reg" accept=".csv,.xlsx" style="display:none">
-      </div>
+      <input type="file" id="f-ei" accept=".csv,.xlsx" style="display:none">
     </div>
-    <div class="suppl-label">Supplemental regulator files <span style="color:var(--text-faint)">(optional — dispensary, lab, processor, cultivator, etc.)</span></div>
-    <div class="suppl-grid">
-      <div class="suppl-zone" id="sz-0" onclick="document.getElementById('sf-0').click()">＋ Add file<div class="sz-name" id="sn-0"></div></div>
-      <div class="suppl-zone" id="sz-1" onclick="document.getElementById('sf-1').click()">＋ Add file<div class="sz-name" id="sn-1"></div></div>
-      <div class="suppl-zone" id="sz-2" onclick="document.getElementById('sf-2').click()">＋ Add file<div class="sz-name" id="sn-2"></div></div>
-      <div class="suppl-zone" id="sz-3" onclick="document.getElementById('sf-3').click()">＋ Add file<div class="sz-name" id="sn-3"></div></div>
-    </div>
-    <input type="file" id="sf-0" accept=".csv,.xlsx" style="display:none">
-    <input type="file" id="sf-1" accept=".csv,.xlsx" style="display:none">
-    <input type="file" id="sf-2" accept=".csv,.xlsx" style="display:none">
-    <input type="file" id="sf-3" accept=".csv,.xlsx" style="display:none">
-    <div id="merge-info" style="display:none;margin-top:8px;font-size:11px;color:var(--blue)"></div>
-  </div>
-
-  <div class="card config-section" id="config-section">
-    <div class="card-title">Column mapping</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px">
-      <div>
-        <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:8px">Join key</div>
-        <div class="map-grid">
-          <div><div class="map-label">EI DB</div><select id="sel-ei-key"></select></div>
-          <div class="map-arrow">↔</div>
-          <div><div class="map-label">Regulator</div><select id="sel-reg-key"></select></div>
-        </div>
+    <div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;font-weight:500">Regulator — Primary file</div>
+      <div class="drop-zone" id="dz-reg" onclick="document.getElementById('f-reg').click()">
+        <div class="dz-icon">📂</div><div class="dz-label">Click or drop file</div>
+        <div class="dz-sub">AllActivities or similar — .xlsx or .csv</div>
+        <div class="dz-file" id="fn-reg"></div>
       </div>
-      <div>
-        <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:8px">Address</div>
-        <div class="map-grid">
-          <div><div class="map-label">EI DB</div><select id="sel-ei-addr"></select></div>
-          <div class="map-arrow">↔</div>
-          <div><div class="map-label">Regulator</div><select id="sel-reg-addr"></select></div>
-        </div>
-      </div>
-      <div>
-        <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:8px">Name</div>
-        <div class="map-grid">
-          <div><div class="map-label">EI DB</div><select id="sel-ei-name"></select></div>
-          <div class="map-arrow">↔</div>
-          <div><div class="map-label">Regulator</div><select id="sel-reg-name"></select></div>
-        </div>
-      </div>
-      <div>
-        <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:8px">Status <span class="info-pill">TaxEnum aware</span></div>
-        <div class="map-grid">
-          <div><div class="map-label">EI DB</div><select id="sel-ei-status"></select></div>
-          <div class="map-arrow">↔</div>
-          <div><div class="map-label">Regulator</div><select id="sel-reg-status"></select></div>
-        </div>
-        <div style="font-size:10px;color:var(--text-faint);margin-top:4px">Also select License Classification column if available</div>
-        <div style="margin-top:6px"><div class="map-label">Regulator classification col (optional)</div><select id="sel-reg-class"></select></div>
-      </div>
-    </div>
-
-    <div class="divider"></div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
-      <div>
-        <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:8px">License type <span class="info-pill">TaxEnum aware</span></div>
-        <div class="map-grid">
-          <div><div class="map-label">EI DB</div><select id="sel-ei-ltype"></select></div>
-          <div class="map-arrow">↔</div>
-          <div><div class="map-label">Regulator</div><select id="sel-reg-ltype"></select></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="divider"></div>
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-      <div class="threshold-row">
-        <div class="threshold-item">
-          <span>Address fuzzy threshold</span>
-          <input type="range" min="50" max="100" value="75" step="1" id="addr-threshold">
-          <span class="threshold-val" id="addr-tval">75%</span>
-        </div>
-        <div class="threshold-item">
-          <span>Name flag threshold</span>
-          <input type="range" min="50" max="100" value="70" step="1" id="name-threshold">
-          <span class="threshold-val" id="name-tval">70%</span>
-        </div>
-      </div>
-      <button class="run-btn" onclick="runComparison()">Run comparison →</button>
+      <input type="file" id="f-reg" accept=".csv,.xlsx" style="display:none">
     </div>
   </div>
+  <div class="suppl-label">Supplemental regulator files <span style="color:var(--text-faint)">(optional — dispensary, lab, processor, cultivator, etc.)</span></div>
+  <div class="suppl-grid">
+    <div class="suppl-zone" id="sz-0" onclick="document.getElementById('sf-0').click()">＋ Add file<div class="sz-name" id="sn-0"></div></div>
+    <div class="suppl-zone" id="sz-1" onclick="document.getElementById('sf-1').click()">＋ Add file<div class="sz-name" id="sn-1"></div></div>
+    <div class="suppl-zone" id="sz-2" onclick="document.getElementById('sf-2').click()">＋ Add file<div class="sz-name" id="sn-2"></div></div>
+    <div class="suppl-zone" id="sz-3" onclick="document.getElementById('sf-3').click()">＋ Add file<div class="sz-name" id="sn-3"></div></div>
+  </div>
+  <input type="file" id="sf-0" accept=".csv,.xlsx" style="display:none">
+  <input type="file" id="sf-1" accept=".csv,.xlsx" style="display:none">
+  <input type="file" id="sf-2" accept=".csv,.xlsx" style="display:none">
+  <input type="file" id="sf-3" accept=".csv,.xlsx" style="display:none">
+  <div id="merge-info" style="display:none;margin-top:8px;font-size:11px;color:var(--blue)"></div>
+</div>
 
-  <div class="results-section" id="results-section">
-    <div class="summary-grid">
-      <div class="stat-card"><div class="stat-num" id="s-new" style="color:var(--blue)">0</div><div class="stat-lbl">New in regulator</div></div>
-      <div class="stat-card"><div class="stat-num" id="s-removed" style="color:var(--red)">0</div><div class="stat-lbl">Missing from regulator</div></div>
-      <div class="stat-card"><div class="stat-num" id="s-changed" style="color:var(--amber)">0</div><div class="stat-lbl">Changed records</div></div>
-      <div class="stat-card"><div class="stat-num" id="s-addr" style="color:var(--amber)">0</div><div class="stat-lbl">Address flags</div></div>
-      <div class="stat-card"><div class="stat-num" id="s-name" style="color:var(--amber)">0</div><div class="stat-lbl">Name flags</div></div>
+<!-- CONFIG -->
+<div class="card config-section" id="config-section">
+  <div class="card-title">Column mapping</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px">
+    <div>
+      <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:7px">Join key</div>
+      <div class="map-grid"><div><div class="map-label">EI DB</div><select id="sel-ei-key"></select></div><div class="map-arrow">↔</div><div><div class="map-label">Regulator</div><select id="sel-reg-key"></select></div></div>
     </div>
-    <div class="results-card">
-      <div class="tabs">
-        <div class="tab active" id="tab-new" onclick="switchTab('new')">New <span class="badge badge-new" id="cnt-new">0</span></div>
-        <div class="tab" id="tab-removed" onclick="switchTab('removed')">Missing <span class="badge badge-removed" id="cnt-removed">0</span></div>
-        <div class="tab" id="tab-changed" onclick="switchTab('changed')">Changed <span class="badge badge-changed" id="cnt-changed">0</span></div>
-      </div>
-      <div class="toolbar">
-        <input type="text" id="search-input" placeholder="Filter results..." oninput="filterTable()">
-        <select id="filter-flag" onchange="filterTable()">
-          <option value="">All records</option>
-          <option value="addr">Address flags</option>
-          <option value="name">Name flags</option>
-          <option value="status">Real status changes</option>
-          <option value="ltype">License type mismatches</option>
-        </select>
-      </div>
-      <div class="tab-content active" id="tc-new"><div class="tbl-wrap"><table id="tbl-new"></table></div></div>
-      <div class="tab-content" id="tc-removed"><div class="tbl-wrap"><table id="tbl-removed"></table></div></div>
-      <div class="tab-content" id="tc-changed"><div class="tbl-wrap"><table id="tbl-changed"></table></div></div>
-      <div class="footer-bar">
-        <button onclick="exportTab()">Export active tab</button>
-        <button class="btn-primary" onclick="exportAll()">Export all tabs (.xlsx)</button>
-      </div>
+    <div>
+      <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:7px">Address</div>
+      <div class="map-grid"><div><div class="map-label">EI DB</div><select id="sel-ei-addr"></select></div><div class="map-arrow">↔</div><div><div class="map-label">Regulator</div><select id="sel-reg-addr"></select></div></div>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:7px">Name <span class="info-pill">allnames aware</span></div>
+      <div class="map-grid"><div><div class="map-label">EI DB</div><select id="sel-ei-name"></select></div><div class="map-arrow">↔</div><div><div class="map-label">Regulator</div><select id="sel-reg-name"></select></div></div>
+      <div style="margin-top:5px"><div class="map-label">EI allnames col (optional)</div><select id="sel-ei-allnames"></select></div>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:7px">Status <span class="info-pill">TaxEnum aware</span></div>
+      <div class="map-grid"><div><div class="map-label">EI DB</div><select id="sel-ei-status"></select></div><div class="map-arrow">↔</div><div><div class="map-label">Regulator</div><select id="sel-reg-status"></select></div></div>
+      <div style="margin-top:5px"><div class="map-label">Regulator classification (optional)</div><select id="sel-reg-class"></select></div>
     </div>
   </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px">
+    <div>
+      <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:7px">License type <span class="info-pill">TaxEnum aware</span></div>
+      <div class="map-grid"><div><div class="map-label">EI DB</div><select id="sel-ei-ltype"></select></div><div class="map-arrow">↔</div><div><div class="map-label">Regulator</div><select id="sel-reg-ltype"></select></div></div>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:7px">Expiration date</div>
+      <div class="map-grid"><div><div class="map-label">EI DB</div><select id="sel-ei-exp"></select></div><div class="map-arrow">↔</div><div><div class="map-label">Regulator</div><select id="sel-reg-exp"></select></div></div>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:7px">County</div>
+      <div class="map-grid"><div><div class="map-label">EI DB</div><select id="sel-ei-county"></select></div><div class="map-arrow">↔</div><div><div class="map-label">Regulator</div><select id="sel-reg-county"></select></div></div>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div class="threshold-row">
+      <div class="threshold-item"><span>Address threshold</span><input type="range" min="0" max="100" value="40" step="1" id="addr-threshold"><span class="threshold-val" id="addr-tval">40%</span></div>
+      <div class="threshold-item"><span>Name threshold</span><input type="range" min="50" max="100" value="70" step="1" id="name-threshold"><span class="threshold-val" id="name-tval">70%</span></div>
+      <div class="threshold-item"><span>Expiring soon (days)</span><input type="number" id="exp-days" value="180" min="30" max="730" style="width:64px"></div>
+    </div>
+    <button class="run-btn" onclick="runComparison()">Run comparison →</button>
+  </div>
+</div>
 
+<!-- RESULTS -->
+<div class="results-section" id="results-section">
+  <div class="summary-grid">
+    <div class="stat-card"><div class="stat-num" id="s-new" style="color:var(--blue)">0</div><div class="stat-lbl">New in regulator</div></div>
+    <div class="stat-card"><div class="stat-num" id="s-removed" style="color:var(--red)">0</div><div class="stat-lbl">Missing from regulator</div></div>
+    <div class="stat-card"><div class="stat-num" id="s-changed" style="color:var(--amber)">0</div><div class="stat-lbl">Changed records</div></div>
+    <div class="stat-card"><div class="stat-num" id="s-addr" style="color:var(--amber)">0</div><div class="stat-lbl">Address flags</div></div>
+    <div class="stat-card"><div class="stat-num" id="s-name" style="color:var(--amber)">0</div><div class="stat-lbl">Name flags</div></div>
+    <div class="stat-card"><div class="stat-num" id="s-expiring" style="color:var(--orange)">0</div><div class="stat-lbl">Expiring soon</div></div>
+  </div>
+  <div class="results-card">
+    <div class="tabs">
+      <div class="tab active" id="tab-new" onclick="switchTab('new')">New <span class="badge badge-new" id="cnt-new">0</span></div>
+      <div class="tab" id="tab-removed" onclick="switchTab('removed')">Missing <span class="badge badge-removed" id="cnt-removed">0</span></div>
+      <div class="tab" id="tab-changed" onclick="switchTab('changed')">Changed <span class="badge badge-changed" id="cnt-changed">0</span></div>
+      <div class="tab" id="tab-expiring" onclick="switchTab('expiring')">Expiring Soon <span class="badge badge-expiring" id="cnt-expiring">0</span></div>
+    </div>
+    <div class="toolbar">
+      <input type="text" id="search-input" placeholder="Filter results..." oninput="filterTable()">
+      <select id="filter-flag" onchange="filterTable()">
+        <option value="">All records</option>
+        <option value="addr">Address flags</option>
+        <option value="name">Name flags</option>
+        <option value="status">Real status changes</option>
+        <option value="ltype">License type mismatches</option>
+        <option value="exp">Expiration mismatches</option>
+      </select>
+    </div>
+    <div class="tab-content active" id="tc-new"><div class="tbl-wrap"><table id="tbl-new"></table></div></div>
+    <div class="tab-content" id="tc-removed"><div class="tbl-wrap"><table id="tbl-removed"></table></div></div>
+    <div class="tab-content" id="tc-changed"><div class="tbl-wrap"><table id="tbl-changed"></table></div></div>
+    <div class="tab-content" id="tc-expiring"><div class="tbl-wrap"><table id="tbl-expiring"></table></div></div>
+    <div class="footer-bar">
+      <button onclick="exportTab()">Export active tab</button>
+      <button class="btn-primary" onclick="exportAll()">Export all tabs (.xlsx)</button>
+    </div>
+  </div>
+</div>
 </div>
 
 <script>
 /* ============================================================
-   CONFIG — column auto-detect hints
+   COL HINTS
    ============================================================ */
 const COL_HINTS = {
-  ei: {
-    key:    ['displayLicenseNumber','licenseNumber','license_number'],
-    addr:   ['locationEAddress1','address'],
-    name:   ['name','companyName'],
-    status: ['licenseStatusValue','status'],
-    ltype:  ['licenseTypes','licenseType','license_type']
+  ei:{
+    key:['displayLicenseNumber','licenseNumber'],
+    addr:['locationEAddress1','address'],
+    name:['name','companyName'],
+    allnames:['merged_allnames','allnames'],
+    status:['stateLicenseStatus','licenseStatusValue','status'],
+    ltype:['licenseTypes','licenseType'],
+    exp:['expirationDate','expiration_date'],
+    county:['locationECounty','county']
   },
-  reg: {
-    key:    ['LICENSE NUMBER','license_number','Dual-Use License Number'],
-    addr:   ['FACILITY ADDRESS','Street 1','Business Address Street'],
-    name:   ['BUSINESS NAME','Business Name: Account Name','Legal Name'],
-    status: ['LICENSE STATUS','status'],
-    ltype:  ['LICENSE TYPE','License Type/Sub Type'],
-    cls:    ['LICENSE CLASSIFICATION','License Classification']
+  reg:{
+    key:['LICENSE NUMBER','license_number','Dual-Use License Number'],
+    addr:['FACILITY ADDRESS','Street 1','Business Address Street'],
+    name:['BUSINESS NAME','Business Name: Account Name','Legal Name'],
+    status:['LICENSE STATUS','status'],
+    ltype:['LICENSE TYPE','License Type/Sub Type'],
+    cls:['LICENSE CLASSIFICATION','License Classification'],
+    exp:['License Expiration Date','LicenseExpiration Date','Expiration Date'],
+    county:['COUNTY','County','county']
   }
 };
 
 /* ============================================================
-   TAXENUM — OH status translation
-   Regulator STATUS + CLASSIFICATION → EI licenseStatusValue
-   Source: Dev_Refresh_Tool.xlsx TaxEnum sheets
+   TAXENUM — STATUS TRANSLATION
    ============================================================ */
 const STATUS_MAP = {
-  // AllActivities raw values + classification combos
-  'active|certificate of operation': 'Active',
-  'active|provisional license':      'Pending',
-  'active|':                         'Active',   // fallback — no classification col
-  'inactive|certificate of operation': 'Inactive',
-  'inactive|provisional license':      'Inactive',
-  'inactive|':                         'Inactive',
-  // Dispensary map extended values
-  'active- certificate of operation|': 'Active',
-  'active- provisional license|':      'Pending',
-  'inactive- certificate of operation|': 'Inactive',
-  'inactive- provisional license|':      'Inactive',
+  'active|certificate of operation':'Active',
+  'active|provisional license':'Pending',
+  'active|':'Active',
+  'inactive|certificate of operation':'Inactive',
+  'inactive|provisional license':'Inactive',
+  'inactive|':'Inactive',
+  'active- certificate of operation|':'Active',
+  'active- provisional license|':'Pending',
+  'inactive- certificate of operation|':'Inactive',
+  'inactive- provisional license|':'Inactive',
 };
-
-function translateStatus(rawStatus, rawClass) {
-  const s = (rawStatus||'').toLowerCase().trim();
-  const c = (rawClass||'').toLowerCase().trim();
-  const key = `${s}|${c}`;
-  return STATUS_MAP[key] || STATUS_MAP[`${s}|`] || null;
+function translateStatus(rawStatus,rawClass){
+  const s=(rawStatus||'').toLowerCase().trim(),c=(rawClass||'').toLowerCase().trim();
+  return STATUS_MAP[`${s}|${c}`]||STATUS_MAP[`${s}|`]||null;
 }
 
 /* ============================================================
-   TAXENUM — OH license type translation
-   Regulator LICENSE TYPE → EI licenseTypes
-   Source: Dev_Refresh_Tool.xlsx TaxEnum sheets
+   TAXENUM — LICENSE TYPE TRANSLATION (hyphen-normalized)
    ============================================================ */
 const LICENSE_TYPE_MAP = {
-  'adult use dispensary':                    'Dispensary',
-  'dispensary':                              'Dispensary',
-  'dual use dispensary':                     'Dual Use Dispensary',
-  'cultivator level i':                      'Cultivator Level I',
-  'cultivator level ii':                     'Cultivator Level II',
-  'dual use cultivator level i':             'Dual Use Cultivator Level I',
-  'dual use cultivator level ii':            'Dual Use Cultivator Level II',
-  'dual use processor':                      'Dual Use Processor',
-  'dual use processor plant only level i':   'Dual Use Processor Plant Only Level I',
-  'dual use processor plant only level ii':  'Dual Use Processor Plant Only Level II',
-  'processor stand alone':                   'Processor Stand Alone',
-  'processor co-owned co-located':           'Processor Co-Owned Co-Located',
-  'processor plant only level i':            'Processor Plant Only Level I',
-  'processor plant only level ii':           'Processor Plant Only Level II',
-  'testing laboratory':                      'Testing Laboratory',
-  'dual use testing laboratory':             'Dual Use Testing Laboratory',
-  'medical marijuana dispensary':            'Medical Marijuana Dispensary',
+  'adult use dispensary':'Dispensary',
+  'dispensary':'Dispensary',
+  'dual use dispensary':'Dual-Use Dispensary',
+  'dual-use dispensary':'Dual-Use Dispensary',
+  'cultivator level i':'Cultivator Level I',
+  'cultivator level ii':'Cultivator Level II',
+  'dual use cultivator level i':'Dual-Use Cultivator Level I',
+  'dual-use cultivator level i':'Dual-Use Cultivator Level I',
+  'dual use cultivator level ii':'Dual-Use Cultivator Level II',
+  'dual-use cultivator level ii':'Dual-Use Cultivator Level II',
+  'dual use processor':'Dual-Use Processor',
+  'dual-use processor':'Dual-Use Processor',
+  'dual use processor plant only level i':'Dual-Use Processor Plant Only Level I',
+  'dual-use processor plant only level i':'Dual-Use Processor Plant Only Level I',
+  'dual use processor plant only level ii':'Dual-Use Processor Plant Only Level II',
+  'dual-use processor plant only level ii':'Dual-Use Processor Plant Only Level II',
+  'processor stand alone':'Processor Stand Alone',
+  'processor co-owned co-located':'Processor Co-Owned Co-Located',
+  'processor plant only level i':'Processor Plant Only Level I',
+  'processor plant only level ii':'Processor Plant Only Level II',
+  'testing laboratory':'Testing Laboratory',
+  'dual use testing laboratory':'Dual-Use Testing Laboratory',
+  'dual-use testing laboratory':'Dual-Use Testing Laboratory',
+  'medical marijuana dispensary':'Medical Marijuana Dispensary',
 };
-
-function translateLicenseType(rawType) {
-  return LICENSE_TYPE_MAP[(rawType||'').toLowerCase().trim()] || null;
+function translateLicenseType(raw){
+  return LICENSE_TYPE_MAP[(raw||'').toLowerCase().trim()]||null;
 }
 
 /* ============================================================
-   STREET TYPE NORMALIZATION
+   STREET TYPE NORMALIZATION (extended with highway patterns)
    ============================================================ */
 const STREET_TYPES = {
   st:'street',str:'street',ave:'avenue',av:'avenue',blvd:'boulevard',
@@ -351,54 +334,110 @@ const STREET_TYPES = {
   fwy:'freeway',cir:'circle',ter:'terrace',terr:'terrace',trl:'trail',
   way:'way',wy:'way',sq:'square',expy:'expressway',ste:'suite',
   n:'north',s:'south',e:'east',w:'west',ne:'northeast',nw:'northwest',
-  se:'southeast',sw:'southwest'
+  se:'southeast',sw:'southwest',
+  // Highway normalization
+  sr:'state route',rte:'route',rt:'route',
+  'us':'us route','u.s.':'us route','u.s':'us route',
+  cr:'county road','co rd':'county road',
+  ch:'county highway','co hwy':'county highway',
+  ohio:'state route',// "Ohio 14" → "State Route 14"
 };
+
+function normStreet(raw){
+  if(!raw) return '';
+  return raw.toLowerCase()
+    .replace(/u\.s\./g,'us route ')
+    .replace(/\bu\.s\b/g,'us route')
+    .replace(/\bohio\s+(\d)/g,'state route $1')
+    .replace(/\bsr\s+(\d)/g,'state route $1')
+    .replace(/\brt\.?\s+(\d)/g,'route $1')
+    .replace(/\bcr\s+(\d)/g,'county road $1')
+    .replace(/[^a-z0-9\s]/g,' ')
+    .split(/\s+/).filter(Boolean)
+    .map(w=>STREET_TYPES[w]||w)
+    .join(' ').trim();
+}
+
+function parseAddr(a){
+  if(!a) return{num:'',street:''};
+  const s=String(a).trim();
+  const m=s.match(/^(\d+[-\d]*)\s+(.+)$/);
+  if(!m) return{num:'',street:normStreet(s)};
+  return{num:m[1],street:normStreet(m[2])};
+}
+
+/* ============================================================
+   FUZZY MATCHING
+   ============================================================ */
+function levenshtein(a,b){
+  const m=a.length,n=b.length;
+  const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));
+  for(let i=1;i<=m;i++) for(let j=1;j<=n;j++)
+    dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  return dp[m][n];
+}
+function fuzzy(a,b){
+  if(!a&&!b) return 100; if(!a||!b) return 0;
+  a=String(a).toLowerCase().trim(); b=String(b).toLowerCase().trim();
+  if(a===b) return 100;
+  const mx=Math.max(a.length,b.length);
+  return mx===0?100:Math.round((1-levenshtein(a,b)/mx)*100);
+}
+function tokenSet(a,b){
+  if(!a&&!b) return 100; if(!a||!b) return 0;
+  const tok=s=>new Set(s.toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(Boolean));
+  const sa=tok(a),sb=tok(b);
+  const inter=[...sa].filter(x=>sb.has(x));
+  const union=new Set([...sa,...sb]);
+  return Math.round(Math.max(inter.length/union.size*100,fuzzy(a,b)));
+}
+
+/* Best name score across primary name + all allnames aliases */
+function bestNameScore(eiName, eiAllnames, regName){
+  const candidates=[eiName];
+  if(eiAllnames){
+    const aliases=String(eiAllnames).split('|').map(s=>s.trim()).filter(Boolean);
+    candidates.push(...aliases);
+  }
+  let best=0, bestAlias='';
+  candidates.forEach(c=>{
+    const s=tokenSet(c,regName);
+    if(s>best){best=s;bestAlias=c===eiName?'':c;}
+  });
+  return{score:best,matchedAlias:bestAlias};
+}
+
+/* Address scoring: number = 60% weight, street = 40% weight */
+function addrScore(eiAddr, regAddr){
+  const pa=parseAddr(eiAddr), pb=parseAddr(regAddr);
+  const numMatch=pa.num&&pb.num?pa.num===pb.num:null;
+  const streetScore=fuzzy(pa.street,pb.street);
+  let combined;
+  if(numMatch===true) combined=Math.round(60+streetScore*0.4);
+  else if(numMatch===false) combined=Math.round(streetScore*0.4); // number mismatch caps at 40
+  else combined=streetScore; // no numbers, pure street score
+  return{numMatch,streetScore,combined,pa,pb};
+}
+
+function norm(v){return v==null?'':String(v).trim();}
+function meterHTML(score){
+  const color=score>=80?'var(--green)':score>=60?'var(--amber)':'var(--red)';
+  return`<div class="meter-wrap"><div class="meter"><div class="meter-fill" style="width:${score}%;background:${color}"></div></div><span class="meter-pct" style="color:${color}">${score}%</span></div>`;
+}
+function parseDate(v){
+  if(!v||v===''||v==='nan') return null;
+  const d=new Date(v);
+  return isNaN(d)?null:d;
+}
 
 /* ============================================================
    STATE
    ============================================================ */
 let eiData=[],regData=[],eiCols=[],regCols=[];
 let supplFiles=[null,null,null,null];
-let results={newRecs:[],removed:[],changed:[]};
+let results={newRecs:[],removed:[],changed:[],expiring:[]};
 let activeTab='new';
-
-/* ============================================================
-   FUZZY / ADDRESS LOGIC
-   ============================================================ */
-function normWord(w){return STREET_TYPES[w.toLowerCase()]||w.toLowerCase();}
-function parseAddr(a){
-  if(!a)return{num:'',street:''};
-  const s=String(a).trim(),m=s.match(/^(\d+[-\d]*)\s+(.+)$/);
-  if(!m)return{num:'',street:s.toLowerCase()};
-  return{num:m[1],street:m[2].toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(Boolean).map(normWord).join(' ')};
-}
-function levenshtein(a,b){
-  const m=a.length,n=b.length,dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));
-  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
-  return dp[m][n];
-}
-function fuzzy(a,b){
-  if(!a&&!b)return 100;if(!a||!b)return 0;
-  a=String(a).toLowerCase().trim();b=String(b).toLowerCase().trim();
-  if(a===b)return 100;
-  const mx=Math.max(a.length,b.length);
-  return mx===0?100:Math.round((1-levenshtein(a,b)/mx)*100);
-}
-function tokenSet(a,b){
-  if(!a&&!b)return 100;if(!a||!b)return 0;
-  const tok=s=>new Set(s.toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(Boolean));
-  const sa=tok(a),sb=tok(b),inter=[...sa].filter(x=>sb.has(x)),union=new Set([...sa,...sb]);
-  return Math.round(Math.max(inter.length/union.size*100,fuzzy(a,b)));
-}
-function addrScore(a,b){
-  const pa=parseAddr(a),pb=parseAddr(b),numMatch=pa.num&&pb.num?pa.num===pb.num:null;
-  return{numMatch,streetScore:fuzzy(pa.street,pb.street),pa,pb};
-}
-function norm(v){return v==null?'':String(v).trim();}
-function meterHTML(score){
-  const color=score>=80?'var(--green)':score>=60?'var(--amber)':'var(--red)';
-  return`<div class="meter-wrap"><div class="meter"><div class="meter-fill" style="width:${score}%;background:${color}"></div></div><span class="meter-pct" style="color:${color}">${score}%</span></div>`;
-}
+const TODAY=new Date('2026-04-06');
 
 /* ============================================================
    FILE READING
@@ -412,14 +451,11 @@ function readFile(file,cb){
     if(rows.length>0){
       const clean=rows.map(row=>{const o={};Object.entries(row).forEach(([k,v])=>{o[k.replace(/\n/g,' ').trim()]=v;});return o;});
       cb(clean,Object.keys(clean[0]));
-    }else cb([],[]);
+    } else cb([],[]);
   };
   r.readAsArrayBuffer(file);
 }
 
-/* ============================================================
-   DROP ZONES
-   ============================================================ */
 function setupDropZone(dzId,fileId,fnId,side){
   const dz=document.getElementById(dzId);
   dz.addEventListener('dragover',e=>e.preventDefault());
@@ -439,15 +475,14 @@ function handleFile(file,side,fnId,dzId){
     if(side==='ei'){eiData=rows;eiCols=cols;}
     else{regData=rows;regCols=cols;}
     populateSelects(side,cols);
-    if(eiData.length>0&&regData.length>0)document.getElementById('config-section').style.display='block';
+    if(eiData.length>0&&regData.length>0) document.getElementById('config-section').style.display='block';
   });
 }
 function handleSuppl(file,i){
   readFile(file,(rows,cols)=>{
     supplFiles[i]={rows,cols,name:file.name};
-    const sz=document.getElementById(`sz-${i}`);
-    sz.classList.add('has-file');
-    sz.childNodes[0].textContent='';
+    document.getElementById(`sz-${i}`).classList.add('has-file');
+    document.getElementById(`sz-${i}`).childNodes[0].textContent='';
     document.getElementById(`sn-${i}`).textContent=file.name;
     const count=supplFiles.filter(Boolean).length;
     const info=document.getElementById('merge-info');
@@ -455,21 +490,27 @@ function handleSuppl(file,i){
     info.textContent=`✓ ${count} supplemental file${count>1?'s':''} will be merged into regulator data`;
   });
 }
+
+function detectCol(cols,candidates){
+  return candidates.find(h=>cols.some(c=>c.toLowerCase()===h.toLowerCase()))||null;
+}
 function populateSelects(side,cols){
-  const fields=side==='ei'?['key','addr','name','status','ltype']:['key','addr','name','status','ltype'];
+  const fields=side==='ei'
+    ?['key','addr','name','allnames','status','ltype','exp','county']
+    :['key','addr','name','status','ltype','exp','county'];
   fields.forEach(t=>{
     const sel=document.getElementById(`sel-${side}-${t}`);
-    if(!sel)return;
+    if(!sel) return;
     sel.innerHTML='<option value="">(none)</option>'+cols.map(c=>`<option value="${c}">${c}</option>`).join('');
-    const hints=COL_HINTS[side][t]||[];
+    const hints=(COL_HINTS[side][t])||[];
     const guess=hints.find(h=>cols.some(c=>c.toLowerCase()===h.toLowerCase()));
     if(guess){const opt=[...sel.options].find(o=>o.value.toLowerCase()===guess.toLowerCase());if(opt)opt.selected=true;}
   });
   if(side==='reg'){
     const clsSel=document.getElementById('sel-reg-class');
     clsSel.innerHTML='<option value="">(none)</option>'+cols.map(c=>`<option value="${c}">${c}</option>`).join('');
-    const clsGuess=COL_HINTS.reg.cls.find(h=>cols.some(c=>c.toLowerCase()===h.toLowerCase()));
-    if(clsGuess){const opt=[...clsSel.options].find(o=>o.value.toLowerCase()===clsGuess.toLowerCase());if(opt)opt.selected=true;}
+    const g=COL_HINTS.reg.cls.find(h=>cols.some(c=>c.toLowerCase()===h.toLowerCase()));
+    if(g){const opt=[...clsSel.options].find(o=>o.value.toLowerCase()===g.toLowerCase());if(opt)opt.selected=true;}
   }
 }
 
@@ -479,13 +520,12 @@ document.getElementById('name-threshold').addEventListener('input',function(){do
 /* ============================================================
    SUPPLEMENTAL MERGE
    ============================================================ */
-function detectCol(cols,candidates){return candidates.find(h=>cols.some(c=>c.toLowerCase()===h.toLowerCase()))||null;}
 function mergeSupplementals(primary,primaryLicCol){
   const enriched=primary.map(r=>({...r}));
-  supplFiles.forEach((sf,i)=>{
-    if(!sf)return;
+  supplFiles.forEach((sf)=>{
+    if(!sf) return;
     const licCol=detectCol(sf.cols,['Dual-Use License Number','LICENSE NUMBER','license_number','displayLicenseNumber']);
-    if(!licCol)return;
+    if(!licCol) return;
     const mmcpCol=detectCol(sf.cols,['MMCP License Number']);
     const expCol=detectCol(sf.cols,['License Expiration Date','LicenseExpiration Date']);
     const dbaCol=detectCol(sf.cols,['DBA','FACILITY DBA']);
@@ -511,18 +551,25 @@ function mergeSupplementals(primary,primaryLicCol){
 function runComparison(){
   const eiKey=document.getElementById('sel-ei-key').value;
   const regKey=document.getElementById('sel-reg-key').value;
+  if(!eiKey||!regKey){alert('Please select join key columns.');return;}
+
   const eiAddr=document.getElementById('sel-ei-addr').value;
   const regAddr=document.getElementById('sel-reg-addr').value;
   const eiName=document.getElementById('sel-ei-name').value;
+  const eiAllnames=document.getElementById('sel-ei-allnames').value;
   const regName=document.getElementById('sel-reg-name').value;
   const eiStatus=document.getElementById('sel-ei-status').value;
   const regStatus=document.getElementById('sel-reg-status').value;
   const regClass=document.getElementById('sel-reg-class').value;
   const eiLtype=document.getElementById('sel-ei-ltype').value;
   const regLtype=document.getElementById('sel-reg-ltype').value;
+  const eiExp=document.getElementById('sel-ei-exp').value;
+  const regExp=document.getElementById('sel-reg-exp').value;
+  const eiCounty=document.getElementById('sel-ei-county').value;
+  const regCounty=document.getElementById('sel-reg-county').value;
   const addrT=parseInt(document.getElementById('addr-threshold').value);
   const nameT=parseInt(document.getElementById('name-threshold').value);
-  if(!eiKey||!regKey){alert('Please select join key columns.');return;}
+  const expDays=parseInt(document.getElementById('exp-days').value)||180;
 
   const enrichedReg=mergeSupplementals(regData,regKey);
   const eiMap=new Map();
@@ -530,29 +577,52 @@ function runComparison(){
   const regMap=new Map();
   enrichedReg.forEach(r=>regMap.set(norm(r[regKey]).toLowerCase(),r));
 
-  const newRecs=[],removed=[],changed=[];
-  const suppInternal=new Set(['_MMCP','_EXP','_DBA','_SRC']);
+  const newRecs=[],removed=[],changed=[],expiring=[];
+  const suppCols=new Set(['_MMCP','_EXP','_DBA','_SRC']);
+
+  // Expiring Soon — from EI directly
+  eiData.forEach(r=>{
+    const expVal=eiExp?norm(r[eiExp]):null;
+    const supExpVal=r['_EXP']?norm(r['_EXP']):null;
+    const expDate=parseDate(expVal)||parseDate(supExpVal);
+    if(!expDate) return;
+    const daysLeft=Math.round((expDate-TODAY)/(1000*60*60*24));
+    const status=norm(r[eiStatus]||r['licenseStatusValue']||'');
+    const isActive=status.toLowerCase().includes('active');
+    if(daysLeft<0&&isActive){
+      expiring.push({rec:r,expDate,daysLeft,severity:'expired'});
+    } else if(daysLeft>=0&&daysLeft<=expDays){
+      const severity=daysLeft<=90?'warn':'soft';
+      expiring.push({rec:r,expDate,daysLeft,severity});
+    }
+  });
 
   regMap.forEach((rec,key)=>{
-    if(!key||key==='nan')return;
+    if(!key||key==='nan') return;
     if(!eiMap.has(key)){newRecs.push(rec);}
     else{
       const base=eiMap.get(key);
       const row={key,regRec:rec,eiRec:base,flags:{},enriched:{},otherDiffs:{}};
 
-      // Address
+      // Address — weighted scoring
       if(eiAddr&&regAddr){
         const ar=addrScore(norm(base[eiAddr]),norm(rec[regAddr]));
-        row.flags.addr={numMatch:ar.numMatch,streetScore:ar.streetScore,eiVal:norm(base[eiAddr]),regVal:norm(rec[regAddr]),pa:ar.pa,pb:ar.pb,flagged:ar.numMatch===false||ar.streetScore<addrT};
+        row.flags.addr={
+          numMatch:ar.numMatch,streetScore:ar.streetScore,combined:ar.combined,
+          eiVal:norm(base[eiAddr]),regVal:norm(rec[regAddr]),pa:ar.pa,pb:ar.pb,
+          flagged:ar.numMatch===false||(ar.combined<addrT)
+        };
       }
 
-      // Name
+      // Name — allnames aware
       if(eiName&&regName){
-        const score=tokenSet(norm(base[eiName]),norm(rec[regName]));
-        row.flags.name={score,eiVal:norm(base[eiName]),regVal:norm(rec[regName]),flagged:score<nameT};
+        const rn=norm(rec[regName]);
+        const allnamesVal=eiAllnames?norm(base[eiAllnames]):'';
+        const{score,matchedAlias}=bestNameScore(norm(base[eiName]),allnamesVal,rn);
+        row.flags.name={score,eiVal:norm(base[eiName]),regVal:rn,matchedAlias,flagged:score<nameT};
       }
 
-      // Status — TaxEnum aware
+      // Status — TaxEnum aware, stateLicenseStatus preferred
       if(eiStatus&&regStatus){
         const rawStatus=norm(rec[regStatus]);
         const rawClass=regClass?norm(rec[regClass]):'';
@@ -560,15 +630,10 @@ function runComparison(){
         const eiVal=norm(base[eiStatus]);
         const translatedOrRaw=translated||rawStatus;
         const match=translatedOrRaw.toLowerCase()===eiVal.toLowerCase();
-        const isProvisionalExpected=translated==='Pending'&&eiVal==='Pending';
+        const isProvisional=rawClass.toLowerCase().includes('provisional')||rawStatus.toLowerCase().includes('provisional');
         row.flags.status={
-          match,
-          eiVal,
-          regVal:rawStatus,
-          regClass:rawClass,
-          translated,
-          isProvisional:rawClass.toLowerCase().includes('provisional'),
-          realChange:!match&&!isProvisionalExpected
+          match,eiVal,regVal:rawStatus,regClass:rawClass,translated,
+          isProvisional,realChange:!match&&!(translated==='Pending'&&eiVal==='Pending')
         };
       }
 
@@ -577,45 +642,67 @@ function runComparison(){
         const rawType=norm(rec[regLtype]);
         const translated=translateLicenseType(rawType);
         const eiVal=norm(base[eiLtype]);
-        const translatedOrRaw=translated||rawType;
-        const match=translatedOrRaw.toLowerCase()===eiVal.toLowerCase();
+        const match=(translated||rawType).toLowerCase()===eiVal.toLowerCase();
         row.flags.ltype={match,eiVal,regVal:rawType,translated,flagged:!match};
       }
 
-      // Enriched supplemental fields
+      // Expiration date comparison
+      if(eiExp||regExp||rec['_EXP']){
+        const eiExpVal=eiExp?norm(base[eiExp]):'';
+        const regExpVal=regExp?norm(rec[regExp]):(norm(rec['_EXP'])||'');
+        const eiDate=parseDate(eiExpVal);
+        const regDate=parseDate(regExpVal);
+        let expFlag=null,expNote='';
+        if(eiDate&&regDate){
+          const diffDays=Math.abs((eiDate-regDate)/(1000*60*60*24));
+          expFlag=diffDays>30;
+          expNote=expFlag?`EI: ${eiExpVal} / REG: ${regExpVal}`:'';
+        } else if(!eiDate&&regDate){
+          expFlag=false; // not a mismatch, just new info
+          expNote=`REG only: ${regExpVal}`;
+        }
+        // Expired but active check
+        const eiStatusVal=norm(base[eiStatus]||'').toLowerCase();
+        const expiredButActive=eiDate&&eiDate<TODAY&&eiStatusVal.includes('active');
+        row.flags.exp={eiVal:eiExpVal,regVal:regExpVal,eiDate,regDate,flagged:expFlag,expiredButActive,note:expNote};
+      }
+
+      // Enriched supplemental data
       ['_MMCP','_EXP','_DBA','_SRC'].forEach(f=>{if(rec[f])row.enriched[f]=rec[f];});
 
-      // Other diffs (non-mapped cols)
-      const skipCols=new Set([regKey,regAddr,regName,regStatus,regClass,regLtype].filter(Boolean));
-      Object.keys(rec).filter(c=>!skipCols.has(c)&&!suppInternal.has(c)&&eiCols.includes(c)).forEach(c=>{
-        if(norm(base[c])!==norm(rec[c]))row.otherDiffs[c]={old:norm(base[c]),new:norm(rec[c])};
+      // Other diffs
+      const skipCols=new Set([regKey,regAddr,regName,regStatus,regClass,regLtype,regExp,regCounty].filter(Boolean));
+      Object.keys(rec).filter(c=>!skipCols.has(c)&&!suppCols.has(c)&&eiCols.includes(c)).forEach(c=>{
+        if(norm(base[c])!==norm(rec[c])) row.otherDiffs[c]={old:norm(base[c]),new:norm(rec[c])};
       });
 
-      // A record is "changed" if any real flag fires
       const hasChange=
         row.flags.addr?.flagged||
         row.flags.name?.flagged||
-        (row.flags.status&&row.flags.status.realChange)||
-        (row.flags.ltype&&row.flags.ltype.flagged)||
+        (row.flags.status?.realChange)||
+        (row.flags.ltype?.flagged)||
+        (row.flags.exp?.flagged||row.flags.exp?.expiredButActive)||
         Object.keys(row.otherDiffs).length>0;
-      if(hasChange)changed.push(row);
+      if(hasChange) changed.push(row);
     }
   });
 
-  eiMap.forEach((rec,key)=>{if(key&&key!=='nan'&&!regMap.has(key))removed.push(rec);});
+  eiMap.forEach((rec,key)=>{if(key&&key!=='nan'&&!regMap.has(key)) removed.push(rec);});
 
-  results={newRecs,removed,changed};
+  results={newRecs,removed,changed,expiring};
   document.getElementById('s-new').textContent=newRecs.length;
   document.getElementById('s-removed').textContent=removed.length;
   document.getElementById('s-changed').textContent=changed.length;
   document.getElementById('s-addr').textContent=changed.filter(r=>r.flags.addr?.flagged).length;
   document.getElementById('s-name').textContent=changed.filter(r=>r.flags.name?.flagged).length;
+  document.getElementById('s-expiring').textContent=expiring.length;
   document.getElementById('cnt-new').textContent=newRecs.length;
   document.getElementById('cnt-removed').textContent=removed.length;
   document.getElementById('cnt-changed').textContent=changed.length;
+  document.getElementById('cnt-expiring').textContent=expiring.length;
   document.getElementById('results-section').style.display='block';
   document.getElementById('results-section').scrollIntoView({behavior:'smooth',block:'start'});
-  renderNewTable();renderRemovedTable();renderChangedTable(changed);
+  renderNewTable();renderRemovedTable();renderChangedTable(changed);renderExpiringTable(expiring);
   switchTab('new');
 }
 
@@ -638,81 +725,123 @@ function renderRemovedTable(){
     '<thead><tr>'+cols.map(c=>`<th>${c}</th>`).join('')+'</tr></thead>'+
     '<tbody>'+rows.map(r=>'<tr>'+cols.map(c=>`<td>${norm(r[c])}</td>`).join('')+'</tr>').join('')+'</tbody>';
 }
+
 function renderChangedTable(rows){
   if(!rows.length){document.getElementById('tbl-changed').innerHTML='<tr><td class="empty-state">No changed records</td></tr>';return;}
-  const head='<thead><tr><th>License #</th><th>Address match</th><th>Name match</th><th>Status</th><th>License type</th><th>Enriched data</th><th>Other changes</th></tr></thead>';
+  const head='<thead><tr><th>License #</th><th>Address</th><th>Name</th><th>Status</th><th>License type</th><th>Expiration</th><th>Enriched</th><th>Other</th></tr></thead>';
   const body='<tbody>'+rows.map(r=>{
-    // Address cell
+    // Address
     let addrCell='—';
     if(r.flags.addr){
       const f=r.flags.addr;
       const numPart=f.numMatch===null?`<span style="font-size:10px;color:var(--text-faint)">No # to compare</span>`:
         f.numMatch?`<span class="num-match">✓ ${f.pa.num}</span>`:`<span class="num-mismatch">✗ EI:${f.pa.num} / REG:${f.pb.num}</span>`;
-      addrCell=`<div style="display:flex;flex-direction:column;gap:3px">${numPart}
-        <div style="font-size:10px;color:var(--text-faint);margin-top:2px">Street</div>
-        ${meterHTML(f.streetScore)}
-        ${f.flagged?`<span class="diff-old">${f.eiVal}</span><span class="diff-new">${f.regVal}</span>`:''}</div>`;
+      addrCell=`<div style="display:flex;flex-direction:column;gap:2px">
+        ${numPart}
+        <div style="font-size:10px;color:var(--text-faint)">Street (${f.streetScore}%) · Combined</div>
+        ${meterHTML(f.combined)}
+        ${f.flagged?`<span class="diff-old">${f.eiVal}</span><span class="diff-new">${f.regVal}</span>`:''}
+      </div>`;
     }
-
-    // Name cell
+    // Name
     let nameCell='—';
     if(r.flags.name){
       const f=r.flags.name;
-      nameCell=`<div style="display:flex;flex-direction:column;gap:3px">${meterHTML(f.score)}${f.flagged?`<span class="diff-old">${f.eiVal}</span><span class="diff-new">${f.regVal}</span>`:''}</div>`;
+      nameCell=`<div style="display:flex;flex-direction:column;gap:2px">
+        ${meterHTML(f.score)}
+        ${f.matchedAlias?`<span class="alias-tag">via alias: ${f.matchedAlias}</span>`:''}
+        ${f.flagged?`<span class="diff-old">${f.eiVal}</span><span class="diff-new">${f.regVal}</span>`:''}
+      </div>`;
     }
-
-    // Status cell — TaxEnum aware
+    // Status
     let statusCell='—';
     if(r.flags.status){
       const f=r.flags.status;
       if(f.match){
         statusCell=`<span class="status-ok">✓ ${f.eiVal}</span>`;
         if(f.translated) statusCell+=`<span class="translated">via: ${f.regVal} → ${f.translated}</span>`;
-      } else if(f.isProvisional&&!f.realChange){
-        // Provisional correctly mapped — not a real change
+      } else if(!f.realChange){
         statusCell=`<span class="status-ok">✓ Pending (provisional)</span><span class="translated">REG: ${f.regVal}</span>`;
       } else {
         statusCell=`<span class="status-changed">⚑ Real change</span>`;
-        if(f.translated) statusCell+=`<span class="translated">REG: ${f.regVal} → ${f.translated}</span>`;
-        statusCell+=`<span class="diff-old">EI: ${f.eiVal}</span><span class="diff-new">REG mapped: ${f.translated||f.regVal}</span>`;
+        if(f.translated) statusCell+=`<span class="translated">${f.regVal} → ${f.translated}</span>`;
+        statusCell+=`<span class="diff-old">EI: ${f.eiVal}</span><span class="diff-new">REG: ${f.translated||f.regVal}</span>`;
       }
     }
-
-    // License type cell — TaxEnum aware
+    // License type
     let ltypeCell='—';
     if(r.flags.ltype){
       const f=r.flags.ltype;
-      if(f.match){
-        ltypeCell=`<span class="match-ok">✓ ${f.eiVal}</span>`;
-      } else {
+      if(f.match){ltypeCell=`<span class="match-ok">✓ ${f.eiVal}</span>`;}
+      else{
         ltypeCell=`<span class="status-changed">⚑ Mismatch</span>`;
-        if(f.translated) ltypeCell+=`<span class="translated">REG: ${f.regVal} → ${f.translated}</span>`;
+        if(f.translated) ltypeCell+=`<span class="translated">${f.regVal} → ${f.translated}</span>`;
         ltypeCell+=`<span class="diff-old">EI: ${f.eiVal}</span><span class="diff-new">REG: ${f.translated||f.regVal}</span>`;
       }
     }
-
+    // Expiration
+    let expCell='—';
+    if(r.flags.exp){
+      const f=r.flags.exp;
+      if(f.expiredButActive){
+        expCell=`<span class="exp-hard">⚠ Expired + Active</span><span class="diff-old">Expired: ${f.eiVal}</span>`;
+      } else if(f.flagged){
+        expCell=`<span class="exp-warn">⚑ Date mismatch</span><span class="diff-old">EI: ${f.eiVal}</span><span class="diff-new">REG: ${f.regVal}</span>`;
+      } else if(f.note){
+        expCell=`<span style="font-size:11px;color:var(--text-muted)">${f.note}</span>`;
+      } else {
+        expCell=`<span class="exp-ok">✓ ${f.eiVal||f.regVal}</span>`;
+      }
+    }
     // Enriched
     const eMap={'_MMCP':'MMCP #','_EXP':'Expires','_DBA':'DBA','_SRC':'Source'};
     const enrichCell=Object.entries(r.enriched).length?
       Object.entries(r.enriched).map(([k,v])=>`<div class="enrich-item"><span class="enrich-key">${eMap[k]||k}: </span>${v}</div>`).join(''):'—';
-
-    // Other diffs
+    // Other
     const others=Object.entries(r.otherDiffs||{});
-    const otherCell=others.length?others.map(([k,v])=>`<div style="margin-bottom:5px"><span style="font-size:10px;color:var(--text-faint)">${k}</span><span class="diff-old">${v.old}</span><span class="diff-new">${v.new}</span></div>`).join(''):'—';
+    const otherCell=others.length?others.map(([k,v])=>`<div style="margin-bottom:4px"><span style="font-size:10px;color:var(--text-faint)">${k}</span><span class="diff-old">${v.old}</span><span class="diff-new">${v.new}</span></div>`).join(''):'—';
 
-    // Flags for filter
     const flags=[];
-    if(r.flags.addr?.flagged)flags.push('addr');
-    if(r.flags.name?.flagged)flags.push('name');
-    if(r.flags.status?.realChange)flags.push('status');
-    if(r.flags.ltype?.flagged)flags.push('ltype');
+    if(r.flags.addr?.flagged) flags.push('addr');
+    if(r.flags.name?.flagged) flags.push('name');
+    if(r.flags.status?.realChange) flags.push('status');
+    if(r.flags.ltype?.flagged) flags.push('ltype');
+    if(r.flags.exp?.flagged||r.flags.exp?.expiredButActive) flags.push('exp');
 
     return`<tr data-flags="${flags.join(',')}">
       <td style="font-weight:600;font-family:var(--font-mono);font-size:11px">${r.key}</td>
-      <td>${addrCell}</td><td>${nameCell}</td><td>${statusCell}</td><td>${ltypeCell}</td><td>${enrichCell}</td><td>${otherCell}</td>
+      <td>${addrCell}</td><td>${nameCell}</td><td>${statusCell}</td><td>${ltypeCell}</td><td>${expCell}</td><td>${enrichCell}</td><td>${otherCell}</td>
     </tr>`;
   }).join('')+'</tbody>';
   document.getElementById('tbl-changed').innerHTML=head+body;
+}
+
+function renderExpiringTable(rows){
+  if(!rows.length){document.getElementById('tbl-expiring').innerHTML='<tr><td class="empty-state">No expiring licenses found in the selected window</td></tr>';return;}
+  const sorted=[...rows].sort((a,b)=>a.daysLeft-b.daysLeft);
+  const head='<thead><tr><th>License #</th><th>Name</th><th>License type</th><th>Status in EI</th><th>Expiration date</th><th>Days left</th><th>Severity</th></tr></thead>';
+  const body='<tbody>'+sorted.map(r=>{
+    const eiKey=document.getElementById('sel-ei-key').value;
+    const eiName=document.getElementById('sel-ei-name').value;
+    const eiLtype=document.getElementById('sel-ei-ltype').value;
+    const eiStatus=document.getElementById('sel-ei-status').value;
+    const sev=r.severity==='expired'
+      ?`<span class="exp-hard">EXPIRED</span>`
+      :r.severity==='warn'
+        ?`<span class="exp-warn">Within 90 days</span>`
+        :`<span class="exp-soft">Within 180 days</span>`;
+    const daysLabel=r.daysLeft<0?`<span class="exp-hard">${Math.abs(r.daysLeft)}d overdue</span>`:`<span>${r.daysLeft}d</span>`;
+    return`<tr data-severity="${r.severity}">
+      <td style="font-weight:600;font-family:var(--font-mono);font-size:11px">${norm(r.rec[eiKey])}</td>
+      <td>${norm(r.rec[eiName])}</td>
+      <td>${norm(r.rec[eiLtype])}</td>
+      <td>${norm(r.rec[eiStatus])}</td>
+      <td>${r.expDate.toISOString().slice(0,10)}</td>
+      <td>${daysLabel}</td>
+      <td>${sev}</td>
+    </tr>`;
+  }).join('')+'</tbody>';
+  document.getElementById('tbl-expiring').innerHTML=head+body;
 }
 
 /* ============================================================
@@ -720,27 +849,29 @@ function renderChangedTable(rows){
    ============================================================ */
 function switchTab(tab){
   activeTab=tab;
-  ['new','removed','changed'].forEach(t=>{
+  ['new','removed','changed','expiring'].forEach(t=>{
     document.getElementById(`tab-${t}`).classList.toggle('active',t===tab);
     document.getElementById(`tc-${t}`).classList.toggle('active',t===tab);
   });
   document.getElementById('search-input').value='';
   document.getElementById('filter-flag').value='';
+  // Hide filter-flag on non-changed tabs
+  document.getElementById('filter-flag').style.display=tab==='changed'?'':'none';
 }
 function filterTable(){
   const q=document.getElementById('search-input').value.toLowerCase();
   const ff=document.getElementById('filter-flag').value;
   const tbl=document.getElementById(`tbl-${activeTab}`);
-  if(!tbl)return;
+  if(!tbl) return;
   [...tbl.querySelectorAll('tbody tr')].forEach(tr=>{
     const tok=!q||tr.textContent.toLowerCase().includes(q);
-    const fok=!ff||(tr.dataset.flags||'').includes(ff);
+    const fok=!ff||(tr.dataset.flags||'').includes(ff)||(tr.dataset.severity||'').includes(ff);
     tr.style.display=tok&&fok?'':'none';
   });
 }
 
 /* ============================================================
-   EXPORT — data arrays only, never DOM
+   EXPORT — data arrays only
    ============================================================ */
 function buildNewRows(){
   const rows=results.newRecs;if(!rows.length)return[];
@@ -754,44 +885,55 @@ function buildRemovedRows(){
 }
 function buildChangedRows(){
   const rows=results.changed;if(!rows.length)return[];
-  const headers=[
-    'License #',
-    'Addr Num Match','Addr Street Score','Addr EI','Addr Regulator','Addr Flagged',
-    'Name Score','Name EI','Name Regulator','Name Flagged',
-    'Status EI','Status Regulator','Status Translated','Status Match','Status Real Change','Is Provisional',
+  const headers=['License #',
+    'Addr Combined Score','Addr Num Match','Addr Street Score','Addr EI','Addr Regulator','Addr Flagged',
+    'Name Score','Name Matched Alias','Name EI','Name Regulator','Name Flagged',
+    'Status EI','Status Regulator','Status Translated','Status Real Change','Is Provisional',
     'License Type EI','License Type Regulator','License Type Translated','License Type Match',
-    'MMCP #','Expiration Date','DBA','Source File',
-    'Other Changes'
-  ];
+    'Exp Date EI','Exp Date Regulator','Exp Flagged','Expired But Active',
+    'MMCP #','Enriched Expiration','DBA','Source File','Other Changes'];
   const data=rows.map(r=>{
-    const a=r.flags.addr||{},n=r.flags.name||{},s=r.flags.status||{},lt=r.flags.ltype||{};
+    const a=r.flags.addr||{},n=r.flags.name||{},s=r.flags.status||{},lt=r.flags.ltype||{},ex=r.flags.exp||{};
     const others=Object.entries(r.otherDiffs||{}).map(([k,v])=>`${k}: ${v.old} → ${v.new}`).join(' | ');
-    return[
-      r.key,
-      a.numMatch==null?'N/A':a.numMatch?'Yes':'No',
-      a.streetScore!=null?a.streetScore+'%':'',
-      a.eiVal||'',a.regVal||'',
+    return[r.key,
+      a.combined!=null?a.combined+'%':'',a.numMatch==null?'N/A':a.numMatch?'Yes':'No',
+      a.streetScore!=null?a.streetScore+'%':'',a.eiVal||'',a.regVal||'',
       a.flagged!=null?(a.flagged?'FLAGGED':'OK'):'',
-      n.score!=null?n.score+'%':'',
-      n.eiVal||'',n.regVal||'',
+      n.score!=null?n.score+'%':'',n.matchedAlias||'',n.eiVal||'',n.regVal||'',
       n.flagged!=null?(n.flagged?'FLAGGED':'OK'):'',
       s.eiVal||'',s.regVal||'',s.translated||'',
-      s.match!=null?(s.match?'Match':'Mismatch'):'',
       s.realChange!=null?(s.realChange?'YES — action needed':'No'):'',
       s.isProvisional?'Yes':'No',
       lt.eiVal||'',lt.regVal||'',lt.translated||'',
       lt.match!=null?(lt.match?'Match':'MISMATCH'):'',
+      ex.eiVal||'',ex.regVal||'',
+      ex.flagged!=null?(ex.flagged?'FLAGGED':'OK'):'',
+      ex.expiredButActive?'YES':'No',
       r.enriched?._MMCP||'',r.enriched?._EXP||'',r.enriched?._DBA||'',r.enriched?._SRC||'',
-      others
-    ];
+      others];
   });
+  return[headers,...data];
+}
+function buildExpiringRows(){
+  const rows=results.expiring;if(!rows.length)return[];
+  const eiKey=document.getElementById('sel-ei-key').value;
+  const eiName=document.getElementById('sel-ei-name').value;
+  const eiLtype=document.getElementById('sel-ei-ltype').value;
+  const eiStatus=document.getElementById('sel-ei-status').value;
+  const headers=['License #','Name','License Type','EI Status','Expiration Date','Days Left','Severity'];
+  const data=rows.sort((a,b)=>a.daysLeft-b.daysLeft).map(r=>[
+    norm(r.rec[eiKey]),norm(r.rec[eiName]),norm(r.rec[eiLtype]),norm(r.rec[eiStatus]),
+    r.expDate.toISOString().slice(0,10),r.daysLeft,
+    r.severity==='expired'?'EXPIRED':r.severity==='warn'?'Within 90 days':'Within 180 days'
+  ]);
   return[headers,...data];
 }
 function exportTab(){
   let data;
-  if(activeTab==='new')data=buildNewRows();
-  else if(activeTab==='removed')data=buildRemovedRows();
-  else data=buildChangedRows();
+  if(activeTab==='new') data=buildNewRows();
+  else if(activeTab==='removed') data=buildRemovedRows();
+  else if(activeTab==='changed') data=buildChangedRows();
+  else data=buildExpiringRows();
   if(!data.length){alert('No data to export.');return;}
   const ws=XLSX.utils.aoa_to_sheet(data),wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,activeTab);
@@ -799,15 +941,14 @@ function exportTab(){
 }
 function exportAll(){
   const wb=XLSX.utils.book_new();
-  [['New Records',buildNewRows()],['Missing Records',buildRemovedRows()],['Changed Records',buildChangedRows()]].forEach(([name,data])=>{
-    if(data.length)XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),name);
+  [['New Records',buildNewRows()],['Missing Records',buildRemovedRows()],
+   ['Changed Records',buildChangedRows()],['Expiring Soon',buildExpiringRows()]].forEach(([name,data])=>{
+    if(data.length) XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),name);
   });
   XLSX.writeFile(wb,`ei_comparison_all_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
-/* ============================================================
-   INIT
-   ============================================================ */
+/* INIT */
 setupDropZone('dz-ei','f-ei','fn-ei','ei');
 setupDropZone('dz-reg','f-reg','fn-reg','reg');
 [0,1,2,3].forEach(setupSupplZone);
