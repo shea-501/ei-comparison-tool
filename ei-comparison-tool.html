@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EI License Comparison Tool</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+/* ============================================================
+   CONFIG — edit fonts, colors, branding here
+   ============================================================ */
+:root {
+  --brand:        #1a1a2e;
+  --accent:       #16213e;
+  --highlight:    #0f3460;
+  --green:        #1d9e75;
+  --amber:        #ba7517;
+  --red:          #e24b4a;
+  --blue:         #378add;
+  --bg:           #f7f7f5;
+  --surface:      #ffffff;
+  --border:       #e2e0d8;
+  --border-mid:   #c8c5bc;
+  --text:         #1a1a1a;
+  --text-muted:   #6b6b6b;
+  --text-faint:   #9e9e9e;
+  --radius:       8px;
+  --radius-lg:    12px;
+  --font:         'DM Sans', system-ui, sans-serif;
+  --font-mono:    'DM Mono', 'Fira Mono', monospace;
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+.header {
+  background: var(--brand);
+  color: #fff;
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.header-logo {
+  width: 28px; height: 28px;
+  background: var(--green);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 600; color: #fff;
+}
+.header-title { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.header-sub { font-size: 11px; color: rgba(255,255,255,.5); margin-top:1px; }
+.header-version {
+  margin-left: auto;
+  font-size: 10px;
+  color: rgba(255,255,255,.35);
+  font-family: var(--font-mono);
+}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.main { max-width: 1200px; margin: 0 auto; padding: 24px 24px 60px; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.card-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 14px;
+}
+
+/* ============================================================
+   UPLOAD ZONES
+   ============================================================ */
+.upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.drop-zone {
+  border: 1.5px dashed var(--border-mid);
+  border-radius: var(--radius);
+  padding: 20px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+  background: var(--bg);
+}
+.drop-zone:hover { background: #eeecea; border-color: var(--highlight); }
+.drop-zone.has-file { border-style: solid; border-color: var(--green); background: #f0fbf7; }
+.drop-zone .dz-icon { font-size: 22px; margin-bottom: 6px; }
+.drop-zone .dz-label { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+.drop-zone .dz-sub { font-size: 11px; color: var(--text-faint); margin-top: 3px; }
+.drop-zone .dz-file { font-size: 11px; color: var(--green); margin-top: 6px; font-weight: 500; word-break: break-all; }
+
+.suppl-label { font-size: 11px; color: var(--text-muted); margin: 14px 0 8px; }
+.suppl-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+.suppl-zone {
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 12px 8px;
+  text-align: center;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text-faint);
+  transition: background .15s;
+  min-height: 64px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+}
+.suppl-zone:hover { background: #eeecea; }
+.suppl-zone.has-file { border-color: var(--green); color: var(--green); background: #f0fbf7; }
+.suppl-zone .sz-name { font-size: 10px; font-weight: 500; word-break: break-all; }
+.merge-info {
+  display: none;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--blue);
+  background: #e8f2fb;
+  border-radius: 99px;
+  padding: 3px 12px;
+  display: inline-block;
+}
+
+/* ============================================================
+   CONFIG SECTION
+   ============================================================ */
+.config-section { display: none; }
+.map-grid {
+  display: grid;
+  grid-template-columns: 1fr 32px 1fr;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.map-arrow { text-align: center; color: var(--text-faint); font-size: 18px; }
+.map-label { font-size: 10px; color: var(--text-faint); margin-bottom: 4px; }
+
+select {
+  width: 100%;
+  font-size: 12px;
+  font-family: var(--font);
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b6b6b'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
+}
+select:focus { outline: none; border-color: var(--highlight); }
+
+.threshold-row { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; }
+.threshold-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); }
+input[type=range] {
+  width: 100px;
+  accent-color: var(--highlight);
+}
+.threshold-val { font-weight: 600; font-size: 12px; min-width: 34px; color: var(--text); }
+
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+.run-btn {
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 10px 24px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  letter-spacing: -.01em;
+  transition: background .15s;
+}
+.run-btn:hover { background: var(--highlight); }
+
+/* ============================================================
+   RESULTS
+   ============================================================ */
+.results-section { display: none; }
+
+.summary-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; margin-bottom: 16px; }
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  text-align: center;
+}
+.stat-num { font-size: 26px; font-weight: 600; line-height: 1; }
+.stat-lbl { font-size: 10px; color: var(--text-muted); margin-top: 4px; text-transform: uppercase; letter-spacing: .04em; }
+
+.results-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--bg); }
+.tab {
+  padding: 10px 18px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  display: flex; align-items: center; gap: 6px;
+  transition: color .15s;
+}
+.tab.active { color: var(--text); border-bottom-color: var(--brand); background: var(--surface); }
+.tab:hover:not(.active) { color: var(--text); }
+
+.badge {
+  display: inline-block;
+  font-size: 10px;
+  padding: 1px 7px;
+  border-radius: 99px;
+  font-weight: 600;
+}
+.badge-new { background: #dbeeff; color: #185fa5; }
+.badge-removed { background: #fde8e8; color: #a32d2d; }
+.badge-changed { background: #fef0d6; color: #854f0b; }
+
+.toolbar {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex; gap: 8px; align-items: center; background: var(--bg);
+}
+.toolbar input[type=text] {
+  font-size: 12px;
+  font-family: var(--font);
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  width: 220px;
+  background: var(--surface);
+}
+.toolbar input[type=text]:focus { outline: none; border-color: var(--highlight); }
+.toolbar select { width: auto; font-size: 12px; padding: 6px 28px 6px 10px; }
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.tbl-wrap { overflow-x: auto; max-height: 460px; overflow-y: auto; }
+
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th {
+  position: sticky; top: 0; z-index: 1;
+  background: var(--bg);
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+td {
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  word-break: break-word;
+  max-width: 220px;
+  line-height: 1.4;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #f9f8f6; }
+
+.diff-old { text-decoration: line-through; color: var(--red); font-size: 11px; display: block; }
+.diff-new { color: var(--green); font-size: 11px; font-weight: 500; display: block; }
+
+.meter-wrap { display: flex; align-items: center; gap: 6px; }
+.meter { height: 5px; border-radius: 3px; background: var(--border); flex: 1; min-width: 50px; overflow: hidden; }
+.meter-fill { height: 100%; border-radius: 3px; }
+.meter-pct { font-size: 11px; font-weight: 600; min-width: 30px; text-align: right; font-family: var(--font-mono); }
+
+.num-match { color: var(--green); font-size: 11px; font-weight: 600; }
+.num-mismatch { color: var(--red); font-size: 11px; font-weight: 600; }
+.match-ok { color: var(--green); font-size: 11px; }
+
+.enrich-item { font-size: 11px; margin-bottom: 3px; }
+.enrich-key { color: var(--text-faint); font-size: 10px; }
+
+.footer-bar {
+  display: flex; gap: 8px; padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+.footer-bar button {
+  font-size: 12px;
+  font-family: var(--font);
+  font-weight: 500;
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: pointer;
+  transition: background .15s;
+}
+.footer-bar button:hover { background: #eeecea; }
+.footer-bar .btn-primary {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+.footer-bar .btn-primary:hover { background: var(--highlight); border-color: var(--highlight); }
+
+.empty-state {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-faint);
+  font-size: 13px;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">EI</div>
+  <div>
+    <div class="header-title">License Comparison Tool</div>
+    <div class="header-sub">Emerald Intelligence — Ohio Cannabis DB</div>
+  </div>
+  <div class="header-version">v4.1</div>
+</div>
+
+<div class="main">
+
+  <!-- ── UPLOAD CARD ── -->
+  <div class="card">
+    <div class="card-title">Upload files</div>
+    <div class="upload-grid">
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;font-weight:500">EI Database (base)</div>
+        <div class="drop-zone" id="dz-ei" onclick="document.getElementById('f-ei').click()">
+          <div class="dz-icon">📂</div>
+          <div class="dz-label">Click or drop file</div>
+          <div class="dz-sub">Trevor export — .xlsx or .csv</div>
+          <div class="dz-file" id="fn-ei"></div>
+        </div>
+        <input type="file" id="f-ei" accept=".csv,.xlsx" style="display:none">
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;font-weight:500">Regulator — Primary file</div>
+        <div class="drop-zone" id="dz-reg" onclick="document.getElementById('f-reg').click()">
+          <div class="dz-icon">📂</div>
+          <div class="dz-label">Click or drop file</div>
+          <div class="dz-sub">AllActivities or similar — .xlsx or .csv</div>
+          <div class="dz-file" id="fn-reg"></div>
+        </div>
+        <input type="file" id="f-reg" accept=".csv,.xlsx" style="display:none">
+      </div>
+    </div>
+
+    <div class="suppl-label">Supplemental regulator files <span style="color:var(--text-faint)">(optional — dispensary, lab, processor, cultivator, etc.)</span></div>
+    <div class="suppl-grid">
+      <div class="suppl-zone" id="sz-0" onclick="document.getElementById('sf-0').click()">＋ Add file<div class="sz-name" id="sn-0"></div></div>
+      <div class="suppl-zone" id="sz-1" onclick="document.getElementById('sf-1').click()">＋ Add file<div class="sz-name" id="sn-1"></div></div>
+      <div class="suppl-zone" id="sz-2" onclick="document.getElementById('sf-2').click()">＋ Add file<div class="sz-name" id="sn-2"></div></div>
+      <div class="suppl-zone" id="sz-3" onclick="document.getElementById('sf-3').click()">＋ Add file<div class="sz-name" id="sn-3"></div></div>
+    </div>
+    <input type="file" id="sf-0" accept=".csv,.xlsx" style="display:none">
+    <input type="file" id="sf-1" accept=".csv,.xlsx" style="display:none">
+    <input type="file" id="sf-2" accept=".csv,.xlsx" style="display:none">
+    <input type="file" id="sf-3" accept=".csv,.xlsx" style="display:none">
+    <div id="merge-info" style="display:none;margin-top:8px">
+      <span class="merge-info" id="merge-info-text"></span>
+    </div>
+  </div>
+
+  <!-- ── CONFIG CARD ── -->
+  <div class="card config-section" id="config-section">
+    <div class="card-title">Column mapping</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px">
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:8px">Join key</div>
+        <div class="map-grid">
+          <div><div class="map-label">EI DB</div><select id="sel-ei-key"></select></div>
+          <div class="map-arrow">↔</div>
+          <div><div class="map-label">Regulator</div><select id="sel-reg-key"></select></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:8px">Address</div>
+        <div class="map-grid">
+          <div><div class="map-label">EI DB</div><select id="sel-ei-addr"></select></div>
+          <div class="map-arrow">↔</div>
+          <div><div class="map-label">Regulator</div><select id="sel-reg-addr"></select></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:8px">Name</div>
+        <div class="map-grid">
+          <div><div class="map-label">EI DB</div><select id="sel-ei-name"></select></div>
+          <div class="map-arrow">↔</div>
+          <div><div class="map-label">Regulator</div><select id="sel-reg-name"></select></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:8px">Status</div>
+        <div class="map-grid">
+          <div><div class="map-label">EI DB</div><select id="sel-ei-status"></select></div>
+          <div class="map-arrow">↔</div>
+          <div><div class="map-label">Regulator</div><select id="sel-reg-status"></select></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div class="threshold-row">
+        <div class="threshold-item">
+          <span>Address fuzzy threshold</span>
+          <input type="range" min="50" max="100" value="75" step="1" id="addr-threshold">
+          <span class="threshold-val" id="addr-tval">75%</span>
+        </div>
+        <div class="threshold-item">
+          <span>Name flag threshold</span>
+          <input type="range" min="50" max="100" value="70" step="1" id="name-threshold">
+          <span class="threshold-val" id="name-tval">70%</span>
+        </div>
+      </div>
+      <button class="run-btn" onclick="runComparison()">Run comparison →</button>
+    </div>
+  </div>
+
+  <!-- ── RESULTS ── -->
+  <div class="results-section" id="results-section">
+    <div class="summary-grid">
+      <div class="stat-card"><div class="stat-num" id="s-new" style="color:var(--blue)">0</div><div class="stat-lbl">New in regulator</div></div>
+      <div class="stat-card"><div class="stat-num" id="s-removed" style="color:var(--red)">0</div><div class="stat-lbl">Missing from regulator</div></div>
+      <div class="stat-card"><div class="stat-num" id="s-changed" style="color:var(--amber)">0</div><div class="stat-lbl">Changed records</div></div>
+      <div class="stat-card"><div class="stat-num" id="s-addr" style="color:var(--amber)">0</div><div class="stat-lbl">Address flags</div></div>
+      <div class="stat-card"><div class="stat-num" id="s-name" style="color:var(--amber)">0</div><div class="stat-lbl">Name flags</div></div>
+    </div>
+
+    <div class="results-card">
+      <div class="tabs">
+        <div class="tab active" id="tab-new" onclick="switchTab('new')">New <span class="badge badge-new" id="cnt-new">0</span></div>
+        <div class="tab" id="tab-removed" onclick="switchTab('removed')">Missing <span class="badge badge-removed" id="cnt-removed">0</span></div>
+        <div class="tab" id="tab-changed" onclick="switchTab('changed')">Changed <span class="badge badge-changed" id="cnt-changed">0</span></div>
+      </div>
+      <div class="toolbar">
+        <input type="text" id="search-input" placeholder="Filter results..." oninput="filterTable()">
+        <select id="filter-flag" onchange="filterTable()">
+          <option value="">All records</option>
+          <option value="addr">Address flags</option>
+          <option value="name">Name flags</option>
+          <option value="status">Status changes</option>
+        </select>
+      </div>
+      <div class="tab-content active" id="tc-new"><div class="tbl-wrap"><table id="tbl-new"></table></div></div>
+      <div class="tab-content" id="tc-removed"><div class="tbl-wrap"><table id="tbl-removed"></table></div></div>
+      <div class="tab-content" id="tc-changed"><div class="tbl-wrap"><table id="tbl-changed"></table></div></div>
+      <div class="footer-bar">
+        <button onclick="exportTab()">Export active tab</button>
+        <button class="btn-primary" onclick="exportAll()">Export all tabs (.xlsx)</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<script>
+/* ============================================================
+   CONFIG — column auto-detect hints (edit to match your data)
+   Add or remove column name guesses for each field.
+   The tool picks the first match it finds in the uploaded file.
+   ============================================================ */
+const COL_HINTS = {
+  ei: {
+    key:    ['displayLicenseNumber','licenseNumber','license_number','License Number'],
+    addr:   ['locationEAddress1','address','Address','street'],
+    name:   ['name','companyName','Company Name'],
+    status: ['licenseStatusValue','status','Status']
+  },
+  reg: {
+    key:    ['LICENSE NUMBER','license_number','licenseNumber','Dual-Use License Number'],
+    addr:   ['FACILITY ADDRESS','address','Street 1','Business Address Street'],
+    name:   ['BUSINESS NAME','Business Name: Account Name','Legal Name','name'],
+    status: ['LICENSE STATUS','status','licenseStatusValue']
+  }
+};
+
+/* ============================================================
+   STREET TYPE NORMALIZATION MAP
+   Add abbreviations → full words here as needed.
+   ============================================================ */
+const STREET_TYPES = {
+  st:'street',str:'street',ave:'avenue',av:'avenue',blvd:'boulevard',
+  bvd:'boulevard',rd:'road',dr:'drive',drv:'drive',ln:'lane',ct:'court',
+  crt:'court',pl:'place',pkwy:'parkway',pky:'parkway',hwy:'highway',
+  fwy:'freeway',cir:'circle',ter:'terrace',terr:'terrace',trl:'trail',
+  way:'way',wy:'way',sq:'square',expy:'expressway',ste:'suite',
+  n:'north',s:'south',e:'east',w:'west',ne:'northeast',nw:'northwest',
+  se:'southeast',sw:'southwest'
+};
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let eiData=[], regData=[], eiCols=[], regCols=[];
+let supplFiles=[null,null,null,null];
+let results={newRecs:[],removed:[],changed:[]};
+let activeTab='new';
+
+/* ============================================================
+   FUZZY / ADDRESS LOGIC
+   ============================================================ */
+function normWord(w){ return STREET_TYPES[w.toLowerCase()]||w.toLowerCase(); }
+function parseAddr(a){
+  if(!a) return {num:'',street:''};
+  const s=String(a).trim();
+  const m=s.match(/^(\d+[-\d]*)\s+(.+)$/);
+  if(!m) return {num:'',street:s.toLowerCase()};
+  const street=m[2].toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(Boolean).map(normWord).join(' ');
+  return {num:m[1], street};
+}
+function levenshtein(a,b){
+  const m=a.length,n=b.length;
+  const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));
+  for(let i=1;i<=m;i++) for(let j=1;j<=n;j++)
+    dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  return dp[m][n];
+}
+function fuzzy(a,b){
+  if(!a&&!b) return 100; if(!a||!b) return 0;
+  a=String(a).toLowerCase().trim(); b=String(b).toLowerCase().trim();
+  if(a===b) return 100;
+  const mx=Math.max(a.length,b.length);
+  return mx===0?100:Math.round((1-levenshtein(a,b)/mx)*100);
+}
+function tokenSet(a,b){
+  if(!a&&!b) return 100; if(!a||!b) return 0;
+  const tok=s=>new Set(s.toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(Boolean));
+  const sa=tok(a),sb=tok(b);
+  const inter=[...sa].filter(x=>sb.has(x));
+  const union=new Set([...sa,...sb]);
+  return Math.round(Math.max(inter.length/union.size*100, fuzzy(a,b)));
+}
+function addrScore(a,b){
+  const pa=parseAddr(a),pb=parseAddr(b);
+  const numMatch=pa.num&&pb.num ? pa.num===pb.num : null;
+  return {numMatch, streetScore:fuzzy(pa.street,pb.street), pa, pb};
+}
+function norm(v){ return v==null?'':String(v).trim(); }
+function meterHTML(score){
+  const color=score>=80?'var(--green)':score>=60?'var(--amber)':'var(--red)';
+  const tc=score>=80?'var(--green)':score>=60?'var(--amber)':'var(--red)';
+  return `<div class="meter-wrap"><div class="meter"><div class="meter-fill" style="width:${score}%;background:${color}"></div></div><span class="meter-pct" style="color:${tc}">${score}%</span></div>`;
+}
+
+/* ============================================================
+   FILE READING
+   ============================================================ */
+function readFile(file,cb){
+  const r=new FileReader();
+  r.onload=e=>{
+    const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const rows=XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});
+    if(rows.length>0){
+      const clean=rows.map(row=>{
+        const o={};
+        Object.entries(row).forEach(([k,v])=>{ o[k.replace(/\n/g,' ').trim()]=v; });
+        return o;
+      });
+      cb(clean, Object.keys(clean[0]));
+    } else cb([],[]);
+  };
+  r.readAsArrayBuffer(file);
+}
+
+/* ============================================================
+   DROP ZONES
+   ============================================================ */
+function setupDropZone(dzId,fileId,fnId,side){
+  const dz=document.getElementById(dzId);
+  dz.addEventListener('dragover',e=>e.preventDefault());
+  dz.addEventListener('drop',e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f)handleFile(f,side,fnId,dzId);});
+  document.getElementById(fileId).addEventListener('change',e=>{if(e.target.files[0])handleFile(e.target.files[0],side,fnId,dzId);});
+}
+function setupSupplZone(i){
+  const sz=document.getElementById(`sz-${i}`);
+  sz.addEventListener('dragover',e=>e.preventDefault());
+  sz.addEventListener('drop',e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f)handleSuppl(f,i);});
+  document.getElementById(`sf-${i}`).addEventListener('change',e=>{if(e.target.files[0])handleSuppl(e.target.files[0],i);});
+}
+
+function handleFile(file,side,fnId,dzId){
+  document.getElementById(fnId).textContent=file.name;
+  document.getElementById(dzId).classList.add('has-file');
+  readFile(file,(rows,cols)=>{
+    if(side==='ei'){eiData=rows;eiCols=cols;}
+    else{regData=rows;regCols=cols;}
+    populateSelects(side,cols);
+    if(eiData.length>0&&regData.length>0) document.getElementById('config-section').style.display='block';
+  });
+}
+
+function handleSuppl(file,i){
+  readFile(file,(rows,cols)=>{
+    supplFiles[i]={rows,cols,name:file.name};
+    const sz=document.getElementById(`sz-${i}`);
+    sz.classList.add('has-file');
+    sz.childNodes[0].textContent='';
+    document.getElementById(`sn-${i}`).textContent=file.name;
+    const count=supplFiles.filter(Boolean).length;
+    const info=document.getElementById('merge-info');
+    const txt=document.getElementById('merge-info-text');
+    info.style.display='block';
+    txt.textContent=`${count} supplemental file${count>1?'s':''} will be merged into regulator data`;
+  });
+}
+
+function populateSelects(side,cols){
+  ['key','addr','name','status'].forEach(t=>{
+    const sel=document.getElementById(`sel-${side}-${t}`);
+    sel.innerHTML='<option value="">(none)</option>'+cols.map(c=>`<option value="${c}">${c}</option>`).join('');
+    const guess=COL_HINTS[side][t].find(h=>cols.some(c=>c.toLowerCase()===h.toLowerCase()));
+    if(guess){
+      const opt=[...sel.options].find(o=>o.value.toLowerCase()===guess.toLowerCase());
+      if(opt) opt.selected=true;
+    }
+  });
+}
+
+document.getElementById('addr-threshold').addEventListener('input',function(){document.getElementById('addr-tval').textContent=this.value+'%';});
+document.getElementById('name-threshold').addEventListener('input',function(){document.getElementById('name-tval').textContent=this.value+'%';});
+
+/* ============================================================
+   SUPPLEMENTAL MERGE
+   ============================================================ */
+function detectCol(cols,candidates){
+  return candidates.find(h=>cols.some(c=>c.toLowerCase()===h.toLowerCase()))||null;
+}
+function mergeSupplementals(primary,primaryLicCol){
+  const enriched=primary.map(r=>({...r}));
+  supplFiles.forEach((sf,i)=>{
+    if(!sf) return;
+    const licCol=detectCol(sf.cols,['Dual-Use License Number','LICENSE NUMBER','license_number','displayLicenseNumber','License Number']);
+    if(!licCol) return;
+    const mmcpCol=detectCol(sf.cols,['MMCP License Number','mmcp_number']);
+    const expCol=detectCol(sf.cols,['License Expiration Date','LicenseExpiration Date','Expiration Date']);
+    const dbaCol=detectCol(sf.cols,['DBA','FACILITY DBA']);
+    const srcMap=new Map();
+    sf.rows.forEach(r=>srcMap.set(norm(r[licCol]).toLowerCase(),r));
+    enriched.forEach(row=>{
+      const key=norm(row[primaryLicCol]).toLowerCase();
+      if(srcMap.has(key)){
+        const sup=srcMap.get(key);
+        if(mmcpCol&&!row['_MMCP'])   row['_MMCP']=norm(sup[mmcpCol]);
+        if(expCol&&!row['_EXP'])     row['_EXP']=norm(sup[expCol]);
+        if(dbaCol&&!row['_DBA'])     row['_DBA']=norm(sup[dbaCol]);
+        if(!row['_SRC'])             row['_SRC']=sf.name.replace(/\.[^.]+$/,'');
+      }
+    });
+  });
+  return enriched;
+}
+
+/* ============================================================
+   COMPARISON ENGINE
+   ============================================================ */
+function runComparison(){
+  const eiKey=document.getElementById('sel-ei-key').value;
+  const regKey=document.getElementById('sel-reg-key').value;
+  const eiAddr=document.getElementById('sel-ei-addr').value;
+  const regAddr=document.getElementById('sel-reg-addr').value;
+  const eiName=document.getElementById('sel-ei-name').value;
+  const regName=document.getElementById('sel-reg-name').value;
+  const eiStatus=document.getElementById('sel-ei-status').value;
+  const regStatus=document.getElementById('sel-reg-status').value;
+  const addrT=parseInt(document.getElementById('addr-threshold').value);
+  const nameT=parseInt(document.getElementById('name-threshold').value);
+  if(!eiKey||!regKey){alert('Please select join key columns for both files.');return;}
+
+  const enrichedReg=mergeSupplementals(regData,regKey);
+
+  const eiMap=new Map();
+  eiData.forEach(r=>eiMap.set(norm(r[eiKey]).toLowerCase(),r));
+  const regMap=new Map();
+  enrichedReg.forEach(r=>regMap.set(norm(r[regKey]).toLowerCase(),r));
+
+  const newRecs=[],removed=[],changed=[];
+  const suppInternal=new Set(['_MMCP','_EXP','_DBA','_SRC']);
+
+  regMap.forEach((rec,key)=>{
+    if(!key||key==='nan') return;
+    if(!eiMap.has(key)){newRecs.push(rec);}
+    else{
+      const base=eiMap.get(key);
+      const row={key,regRec:rec,eiRec:base,flags:{},enriched:{},otherDiffs:{}};
+
+      if(eiAddr&&regAddr){
+        const ar=addrScore(norm(base[eiAddr]),norm(rec[regAddr]));
+        row.flags.addr={numMatch:ar.numMatch,streetScore:ar.streetScore,eiVal:norm(base[eiAddr]),regVal:norm(rec[regAddr]),pa:ar.pa,pb:ar.pb,flagged:ar.numMatch===false||ar.streetScore<addrT};
+      }
+      if(eiName&&regName){
+        const score=tokenSet(norm(base[eiName]),norm(rec[regName]));
+        row.flags.name={score,eiVal:norm(base[eiName]),regVal:norm(rec[regName]),flagged:score<nameT};
+      }
+      if(eiStatus&&regStatus){
+        const bS=norm(base[eiStatus]).toLowerCase(),nS=norm(rec[regStatus]).toLowerCase();
+        row.flags.status={match:bS===nS,eiVal:norm(base[eiStatus]),regVal:norm(rec[regStatus])};
+      }
+
+      ['_MMCP','_EXP','_DBA','_SRC'].forEach(f=>{if(rec[f]) row.enriched[f]=rec[f];});
+
+      const skipCols=new Set([regKey,regAddr,regName,regStatus].filter(Boolean));
+      Object.keys(rec).filter(c=>!skipCols.has(c)&&!suppInternal.has(c)&&eiCols.includes(c)).forEach(c=>{
+        if(norm(base[c])!==norm(rec[c])) row.otherDiffs[c]={old:norm(base[c]),new:norm(rec[c])};
+      });
+
+      const hasChange=row.flags.addr?.flagged||row.flags.name?.flagged||(row.flags.status&&!row.flags.status.match)||Object.keys(row.otherDiffs).length>0;
+      if(hasChange) changed.push(row);
+    }
+  });
+
+  eiMap.forEach((rec,key)=>{if(key&&key!=='nan'&&!regMap.has(key)) removed.push(rec);});
+
+  results={newRecs,removed,changed};
+  document.getElementById('s-new').textContent=newRecs.length;
+  document.getElementById('s-removed').textContent=removed.length;
+  document.getElementById('s-changed').textContent=changed.length;
+  document.getElementById('s-addr').textContent=changed.filter(r=>r.flags.addr?.flagged).length;
+  document.getElementById('s-name').textContent=changed.filter(r=>r.flags.name?.flagged).length;
+  document.getElementById('cnt-new').textContent=newRecs.length;
+  document.getElementById('cnt-removed').textContent=removed.length;
+  document.getElementById('cnt-changed').textContent=changed.length;
+  document.getElementById('results-section').style.display='block';
+  document.getElementById('results-section').scrollIntoView({behavior:'smooth',block:'start'});
+  renderNewTable(); renderRemovedTable(); renderChangedTable(changed);
+  switchTab('new');
+}
+
+/* ============================================================
+   RENDER TABLES
+   ============================================================ */
+function renderNewTable(){
+  const rows=results.newRecs;
+  if(!rows.length){document.getElementById('tbl-new').innerHTML='<tr><td class="empty-state">No new records found</td></tr>';return;}
+  const cols=Object.keys(rows[0]).filter(c=>!c.startsWith('_'));
+  document.getElementById('tbl-new').innerHTML=
+    '<thead><tr>'+cols.map(c=>`<th>${c}</th>`).join('')+'</tr></thead>'+
+    '<tbody>'+rows.map(r=>'<tr>'+cols.map(c=>`<td>${norm(r[c])}</td>`).join('')+'</tr>').join('')+'</tbody>';
+}
+
+function renderRemovedTable(){
+  const rows=results.removed;
+  if(!rows.length){document.getElementById('tbl-removed').innerHTML='<tr><td class="empty-state">No removed records</td></tr>';return;}
+  const cols=Object.keys(rows[0]);
+  document.getElementById('tbl-removed').innerHTML=
+    '<thead><tr>'+cols.map(c=>`<th>${c}</th>`).join('')+'</tr></thead>'+
+    '<tbody>'+rows.map(r=>'<tr>'+cols.map(c=>`<td>${norm(r[c])}</td>`).join('')+'</tr>').join('')+'</tbody>';
+}
+
+function renderChangedTable(rows){
+  if(!rows.length){document.getElementById('tbl-changed').innerHTML='<tr><td class="empty-state">No changed records</td></tr>';return;}
+  const head='<thead><tr><th>License #</th><th>Address match</th><th>Name match</th><th>Status</th><th>Enriched data</th><th>Other changes</th></tr></thead>';
+  const body='<tbody>'+rows.map(r=>{
+    let addrCell='—';
+    if(r.flags.addr){
+      const f=r.flags.addr;
+      const numPart=f.numMatch===null?`<span style="font-size:10px;color:var(--text-faint)">No # to compare</span>`:
+        f.numMatch?`<span class="num-match">✓ ${f.pa.num}</span>`:`<span class="num-mismatch">✗ EI: ${f.pa.num} / REG: ${f.pb.num}</span>`;
+      addrCell=`<div style="display:flex;flex-direction:column;gap:3px">${numPart}
+        <div style="font-size:10px;color:var(--text-faint);margin-top:2px">Street name</div>
+        ${meterHTML(f.streetScore)}
+        ${f.flagged?`<span class="diff-old">${f.eiVal}</span><span class="diff-new">${f.regVal}</span>`:''}</div>`;
+    }
+    let nameCell='—';
+    if(r.flags.name){
+      const f=r.flags.name;
+      nameCell=`<div style="display:flex;flex-direction:column;gap:3px">${meterHTML(f.score)}${f.flagged?`<span class="diff-old">${f.eiVal}</span><span class="diff-new">${f.regVal}</span>`:''}</div>`;
+    }
+    let statusCell='—';
+    if(r.flags.status){
+      const f=r.flags.status;
+      statusCell=f.match?`<span class="match-ok">✓ ${f.eiVal}</span>`:`<span class="diff-old">${f.eiVal}</span><span class="diff-new">${f.regVal}</span>`;
+    }
+    const eMap={'_MMCP':'MMCP #','_EXP':'Expires','_DBA':'DBA','_SRC':'Source'};
+    const enrichCell=Object.entries(r.enriched).length?
+      Object.entries(r.enriched).map(([k,v])=>`<div class="enrich-item"><span class="enrich-key">${eMap[k]||k}: </span>${v}</div>`).join(''):'—';
+    const others=Object.entries(r.otherDiffs||{});
+    const otherCell=others.length?others.map(([k,v])=>`<div style="margin-bottom:5px"><span style="font-size:10px;color:var(--text-faint)">${k}</span><span class="diff-old">${v.old}</span><span class="diff-new">${v.new}</span></div>`).join(''):'—';
+    const flags=[];
+    if(r.flags.addr?.flagged) flags.push('addr');
+    if(r.flags.name?.flagged) flags.push('name');
+    if(r.flags.status&&!r.flags.status.match) flags.push('status');
+    return`<tr data-flags="${flags.join(',')}" data-key="${r.key}">
+      <td style="font-weight:600;font-family:var(--font-mono);font-size:11px">${r.key}</td>
+      <td>${addrCell}</td><td>${nameCell}</td><td>${statusCell}</td><td>${enrichCell}</td><td>${otherCell}</td>
+    </tr>`;
+  }).join('')+'</tbody>';
+  document.getElementById('tbl-changed').innerHTML=head+body;
+}
+
+/* ============================================================
+   TABS + FILTER
+   ============================================================ */
+function switchTab(tab){
+  activeTab=tab;
+  ['new','removed','changed'].forEach(t=>{
+    document.getElementById(`tab-${t}`).classList.toggle('active',t===tab);
+    document.getElementById(`tc-${t}`).classList.toggle('active',t===tab);
+  });
+  document.getElementById('search-input').value='';
+  document.getElementById('filter-flag').value='';
+}
+function filterTable(){
+  const q=document.getElementById('search-input').value.toLowerCase();
+  const ff=document.getElementById('filter-flag').value;
+  const tbl=document.getElementById(`tbl-${activeTab}`);
+  if(!tbl) return;
+  [...tbl.querySelectorAll('tbody tr')].forEach(tr=>{
+    const tok=!q||tr.textContent.toLowerCase().includes(q);
+    const fok=!ff||(tr.dataset.flags||'').includes(ff);
+    tr.style.display=tok&&fok?'':'none';
+  });
+}
+
+/* ============================================================
+   EXPORT — pulls from data arrays (not DOM)
+   ============================================================ */
+function buildNewRows(){
+  const rows=results.newRecs; if(!rows.length) return [];
+  const cols=Object.keys(rows[0]).filter(c=>!c.startsWith('_'));
+  return [cols, ...rows.map(r=>cols.map(c=>norm(r[c])))];
+}
+function buildRemovedRows(){
+  const rows=results.removed; if(!rows.length) return [];
+  const cols=Object.keys(rows[0]);
+  return [cols, ...rows.map(r=>cols.map(c=>norm(r[c])))];
+}
+function buildChangedRows(){
+  const rows=results.changed; if(!rows.length) return [];
+  const headers=['License #','Addr Num Match','Addr Street Score','Addr EI','Addr Regulator','Addr Flagged',
+    'Name Score','Name EI','Name Regulator','Name Flagged',
+    'Status EI','Status Regulator','Status Match',
+    'MMCP #','Expiration Date','DBA','Source File','Other Changes'];
+  const data=rows.map(r=>{
+    const a=r.flags.addr||{}, n=r.flags.name||{}, s=r.flags.status||{};
+    const others=Object.entries(r.otherDiffs||{}).map(([k,v])=>`${k}: ${v.old} → ${v.new}`).join(' | ');
+    return [
+      r.key,
+      a.numMatch==null?'N/A':a.numMatch?'Yes':'No',
+      a.streetScore!=null?a.streetScore+'%':'',
+      a.eiVal||'', a.regVal||'',
+      a.flagged!=null?(a.flagged?'FLAGGED':'OK'):'',
+      n.score!=null?n.score+'%':'',
+      n.eiVal||'', n.regVal||'',
+      n.flagged!=null?(n.flagged?'FLAGGED':'OK'):'',
+      s.eiVal||'', s.regVal||'',
+      s.match!=null?(s.match?'Match':'CHANGED'):'',
+      r.enriched?._MMCP||'',
+      r.enriched?._EXP||'',
+      r.enriched?._DBA||'',
+      r.enriched?._SRC||'',
+      others
+    ];
+  });
+  return [headers, ...data];
+}
+
+function exportTab(){
+  let data;
+  if(activeTab==='new') data=buildNewRows();
+  else if(activeTab==='removed') data=buildRemovedRows();
+  else data=buildChangedRows();
+  if(!data.length){alert('No data to export.');return;}
+  const ws=XLSX.utils.aoa_to_sheet(data);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,activeTab);
+  XLSX.writeFile(wb,`ei_comparison_${activeTab}_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+function exportAll(){
+  const wb=XLSX.utils.book_new();
+  [['New Records',buildNewRows()],['Missing Records',buildRemovedRows()],['Changed Records',buildChangedRows()]].forEach(([name,data])=>{
+    if(data.length) XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),name);
+  });
+  XLSX.writeFile(wb,`ei_comparison_all_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+setupDropZone('dz-ei','f-ei','fn-ei','ei');
+setupDropZone('dz-reg','f-reg','fn-reg','reg');
+[0,1,2,3].forEach(setupSupplZone);
+</script>
+</body>
+</html>
