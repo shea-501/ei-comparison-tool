@@ -113,9 +113,9 @@ tr:hover td{background:#f9f8f6}
   <div class="header-logo">EI</div>
   <div>
     <div class="header-title">License Comparison Tool</div>
-    <div class="header-sub">Emerald Intelligence — Ohio Cannabis DB</div>
+    <div class="header-sub" id="header-sub">Emerald Intelligence — Select a locale to begin</div>
   </div>
-  <div class="header-version">v6.0</div>
+  <div class="header-version">v7.0</div>
 </div>
 <div class="main">
 
@@ -156,7 +156,26 @@ tr:hover td{background:#f9f8f6}
   <div id="merge-info" style="display:none;margin-top:8px;font-size:11px;color:var(--blue)"></div>
 </div>
 
-<!-- CONFIG -->
+<!-- LOCALE SELECTOR -->
+<div class="card" id="locale-card" style="display:none">
+  <div class="card-title">State / locale</div>
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <div style="flex:1;min-width:220px">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">Select the state you are comparing</div>
+      <select id="sel-locale" onchange="onLocaleChange()" style="width:100%;font-size:13px;padding:8px 28px 8px 10px">
+        <option value="">— Select locale —</option>
+      </select>
+    </div>
+    <div id="locale-info" style="font-size:11px;color:var(--text-muted);line-height:1.7;display:none">
+      <div id="locale-status-count"></div>
+      <div id="locale-lt-count"></div>
+      <div id="locale-dnl-count" style="color:var(--red)"></div>
+    </div>
+    <div id="locale-ref-badge" style="display:none;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600"></div>
+  </div>
+</div>
+
+
 <div class="card config-section" id="config-section">
   <div class="card-title">Column mapping</div>
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px">
@@ -272,9 +291,118 @@ const COL_HINTS = {
 };
 
 /* ============================================================
-   TAXENUM — STATUS TRANSLATION
+   EI REFERENCE DATA — fetched from repo
    ============================================================ */
-const STATUS_MAP = {
+const EI_REF_URL = 'https://shea-501.github.io/ei-comparison-tool/ei_reference.json';
+let eiRef = null;
+let activeLocale = '';
+let dynamicStatusMap = {};
+let dynamicLtMap = {};
+let doNotLoadValues = new Set();
+
+async function loadEiReference(){
+  try {
+    const res = await fetch(EI_REF_URL);
+    if(!res.ok) throw new Error('fetch failed');
+    eiRef = await res.json();
+    populateLocaleSelect();
+    console.log('EI reference loaded:', Object.keys(eiRef.devRefresh||{}).length, 'devRefresh locales');
+  } catch(e) {
+    console.warn('Could not load ei_reference.json — falling back to built-in OH maps', e);
+  }
+}
+
+function populateLocaleSelect(){
+  if(!eiRef) return;
+  const sel = document.getElementById('sel-locale');
+  // Build list from localeInfo (all 72 locales), mark which have devRefresh
+  const locales = Object.entries(eiRef.localeInfo||{})
+    .filter(([k]) => k !== 'nan')
+    .sort((a,b) => (a[1].commonName||a[0]).localeCompare(b[1].commonName||b[0]));
+  sel.innerHTML = '<option value="">— Select locale —</option>';
+  locales.forEach(([key, info]) => {
+    const hasDR = !!(eiRef.devRefresh||{})[key];
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = `${info.commonName||key}${hasDR?' ✓':''}`;
+    sel.appendChild(opt);
+  });
+  // Show the locale card now that we have data
+  document.getElementById('locale-card').style.display = 'block';
+}
+
+function onLocaleChange(){
+  const locale = document.getElementById('sel-locale').value;
+  activeLocale = locale;
+  dynamicStatusMap = {};
+  dynamicLtMap = {};
+  doNotLoadValues = new Set();
+
+  if(!locale || !eiRef) return;
+
+  const info = (eiRef.localeInfo||{})[locale] || {};
+  const hasDR = !!(eiRef.devRefresh||{})[locale];
+
+  // Build status map from statusLookup
+  const statusLookup = (eiRef.statusLookup||{})[locale] || {};
+  Object.entries(statusLookup).forEach(([raw, data]) => {
+    const key = raw.toLowerCase().trim() + '|';
+    dynamicStatusMap[key] = data.eiStatus;
+    if(data.doNotLoad) doNotLoadValues.add(raw.toLowerCase().trim());
+  });
+
+  // Overlay with devRefresh statuses (more granular)
+  const dr = (eiRef.devRefresh||{})[locale];
+  if(dr){
+    (dr.statuses||[]).forEach(s => {
+      if(s.rawValue && s.eiValue){
+        const key = s.rawValue.toLowerCase().trim() + '|';
+        dynamicStatusMap[key] = s.eiValue;
+        if(s.eiValue === '{DO NOT LOAD}') doNotLoadValues.add(s.rawValue.toLowerCase().trim());
+      }
+    });
+    (dr.licenseTypes||[]).forEach(lt => {
+      if(lt.rawValue && lt.eiValue){
+        dynamicLtMap[lt.rawValue.toLowerCase().trim()] = lt.eiValue.split('|')[0]; // take first EI type
+      }
+    });
+  }
+
+  // Also build LT map from licenseTypeLookup
+  const ltLookup = (eiRef.licenseTypeLookup||{})[locale] || {};
+  Object.entries(ltLookup).forEach(([raw, data]) => {
+    const key = raw.toLowerCase().trim();
+    if(!dynamicLtMap[key]) dynamicLtMap[key] = data.eiLicenseType ? data.eiLicenseType.split('|')[0] : null;
+  });
+
+  // Update header
+  const commonName = info.commonName || locale;
+  const leg = info.legalization || '';
+  document.getElementById('header-sub').textContent = `Emerald Intelligence — ${commonName}${leg?' · '+leg:''}`;
+
+  // Show info badges
+  const statusCount = Object.keys(dynamicStatusMap).length;
+  const ltCount = Object.keys(dynamicLtMap).length;
+  const dnlCount = doNotLoadValues.size;
+  document.getElementById('locale-status-count').textContent = `${statusCount} status mappings loaded`;
+  document.getElementById('locale-lt-count').textContent = `${ltCount} license type mappings loaded`;
+  document.getElementById('locale-dnl-count').textContent = dnlCount > 0 ? `${dnlCount} {DO NOT LOAD} values will be suppressed` : '';
+  document.getElementById('locale-info').style.display = 'block';
+
+  const badge = document.getElementById('locale-ref-badge');
+  if(hasDR){
+    badge.textContent = '✓ Dev Refresh data active';
+    badge.style.cssText = 'display:inline-block;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;background:#EAF3DE;color:#27500A;border:1px solid #C0DD97';
+  } else {
+    badge.textContent = '⚠ Dictionary data only';
+    badge.style.cssText = 'display:inline-block;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;background:#FEF0D6;color:#854f0b;border:1px solid #FACF85';
+  }
+}
+
+/* ============================================================
+   TAXENUM — STATUS TRANSLATION (dynamic + OH fallback)
+   ============================================================ */
+const OH_STATUS_MAP_FALLBACK = {
   'active|certificate of operation':'Active',
   'active|provisional license':'Pending',
   'active|':'Active',
@@ -288,13 +416,18 @@ const STATUS_MAP = {
 };
 function translateStatus(rawStatus,rawClass){
   const s=(rawStatus||'').toLowerCase().trim(),c=(rawClass||'').toLowerCase().trim();
-  return STATUS_MAP[`${s}|${c}`]||STATUS_MAP[`${s}|`]||null;
+  const map = Object.keys(dynamicStatusMap).length > 0 ? dynamicStatusMap : OH_STATUS_MAP_FALLBACK;
+  return map[`${s}|${c}`]||map[`${s}|`]||null;
+}
+function isDoNotLoad(rawStatus){
+  if(!rawStatus) return false;
+  return doNotLoadValues.has(rawStatus.toLowerCase().trim());
 }
 
 /* ============================================================
-   TAXENUM — LICENSE TYPE TRANSLATION (hyphen-normalized)
+   TAXENUM — LICENSE TYPE TRANSLATION (dynamic + OH fallback)
    ============================================================ */
-const LICENSE_TYPE_MAP = {
+const OH_LT_MAP_FALLBACK = {
   'adult use dispensary':'Dispensary',
   'dispensary':'Dispensary',
   'dual use dispensary':'Dual-Use Dispensary',
@@ -321,7 +454,9 @@ const LICENSE_TYPE_MAP = {
   'medical marijuana dispensary':'Medical Marijuana Dispensary',
 };
 function translateLicenseType(raw){
-  return LICENSE_TYPE_MAP[(raw||'').toLowerCase().trim()]||null;
+  const key=(raw||'').toLowerCase().trim();
+  if(Object.keys(dynamicLtMap).length > 0) return dynamicLtMap[key]||null;
+  return OH_LT_MAP_FALLBACK[key]||null;
 }
 
 /* ============================================================
@@ -475,7 +610,10 @@ function handleFile(file,side,fnId,dzId){
     if(side==='ei'){eiData=rows;eiCols=cols;}
     else{regData=rows;regCols=cols;}
     populateSelects(side,cols);
-    if(eiData.length>0&&regData.length>0) document.getElementById('config-section').style.display='block';
+    if(eiData.length>0&&regData.length>0){
+      document.getElementById('config-section').style.display='block';
+      if(eiRef) document.getElementById('locale-card').style.display='block';
+    }
   });
 }
 function handleSuppl(file,i){
@@ -572,10 +710,19 @@ function runComparison(){
   const expDays=parseInt(document.getElementById('exp-days').value)||180;
 
   const enrichedReg=mergeSupplementals(regData,regKey);
+
+  // Suppress {DO NOT LOAD} records from regulator data
+  const regStatus2=document.getElementById('sel-reg-status').value;
+  const suppressed = enrichedReg.filter(r => {
+    if(!regStatus2) return true;
+    return !isDoNotLoad(norm(r[regStatus2]));
+  });
+  const dnlCount = enrichedReg.length - suppressed.length;
+
   const eiMap=new Map();
   eiData.forEach(r=>eiMap.set(norm(r[eiKey]).toLowerCase(),r));
   const regMap=new Map();
-  enrichedReg.forEach(r=>regMap.set(norm(r[regKey]).toLowerCase(),r));
+  suppressed.forEach(r=>regMap.set(norm(r[regKey]).toLowerCase(),r));
 
   const newRecs=[],removed=[],changed=[],expiring=[];
   const suppCols=new Set(['_MMCP','_EXP','_DBA','_SRC']);
@@ -690,6 +837,15 @@ function runComparison(){
   eiMap.forEach((rec,key)=>{if(key&&key!=='nan'&&!regMap.has(key)) removed.push(rec);});
 
   results={newRecs,removed,changed,expiring};
+  // Show suppression note if any records were filtered
+  const dnlNote = document.getElementById('dnl-note') || (() => {
+    const d = document.createElement('div');
+    d.id = 'dnl-note';
+    d.style.cssText = 'font-size:11px;color:var(--red);margin-bottom:10px;font-weight:500';
+    document.querySelector('.summary-grid').before(d);
+    return d;
+  })();
+  dnlNote.textContent = dnlCount > 0 ? `⚑ ${dnlCount} regulator record${dnlCount>1?'s':''} suppressed ({DO NOT LOAD} status)` : '';
   document.getElementById('s-new').textContent=newRecs.length;
   document.getElementById('s-removed').textContent=removed.length;
   document.getElementById('s-changed').textContent=changed.length;
@@ -952,6 +1108,7 @@ function exportAll(){
 setupDropZone('dz-ei','f-ei','fn-ei','ei');
 setupDropZone('dz-reg','f-reg','fn-reg','reg');
 [0,1,2,3].forEach(setupSupplZone);
+loadEiReference();
 </script>
 </body>
 </html>
