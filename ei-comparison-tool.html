@@ -115,7 +115,7 @@ tr:hover td{background:#f9f8f6}
     <div class="header-title">License Comparison Tool</div>
     <div class="header-sub" id="header-sub">Emerald Intelligence — Select a locale to begin</div>
   </div>
-  <div class="header-version">v7.0</div>
+  <div class="header-version">v8.0</div>
 </div>
 <div class="main">
 
@@ -269,24 +269,24 @@ tr:hover td{background:#f9f8f6}
    ============================================================ */
 const COL_HINTS = {
   ei:{
-    key:['displayLicenseNumber','licenseNumber'],
-    addr:['locationEAddress1','address'],
-    name:['name','companyName'],
-    allnames:['merged_allnames','allnames'],
-    status:['stateLicenseStatus','licenseStatusValue','status'],
-    ltype:['licenseTypes','licenseType'],
-    exp:['expirationDate','expiration_date'],
-    county:['locationECounty','county']
+    key:['displayLicenseNumber','licenseNumber','License Number','license_number'],
+    addr:['locationEAddress1','FACILITY ADDRESS','Street 1','Business Address Street'],
+    name:['companyName','name','BUSINESS NAME','Legal Name'],
+    allnames:['merged_allnames','allnames','aliasarray','DBANamesManual'],
+    status:['stateLicenseStatus','licenseStatusValue','LICENSE STATUS','status'],
+    ltype:['licenseTypes','primaryBusinessTypeValues','approvedLicenseTypeValue','LICENSE TYPE'],
+    exp:['expirationDate','License Expiration Date','LicenseExpiration Date','Expiration Date'],
+    county:['locationECounty','COUNTY','County','county']
   },
   reg:{
-    key:['LICENSE NUMBER','license_number','Dual-Use License Number'],
-    addr:['FACILITY ADDRESS','Street 1','Business Address Street'],
-    name:['BUSINESS NAME','Business Name: Account Name','Legal Name'],
-    status:['LICENSE STATUS','status'],
-    ltype:['LICENSE TYPE','License Type/Sub Type'],
+    key:['License Number','LICENSE NUMBER','license_number','displayLicenseNumber','Dual-Use License Number'],
+    addr:['Address Line 1','FACILITY ADDRESS','Street 1','Business Address Street'],
+    name:['Entity Name','BUSINESS NAME','Business Name: Account Name','Legal Name'],
+    status:['License Status','LICENSE STATUS','status'],
+    ltype:['License Type','LICENSE TYPE','License Type/Sub Type'],
     cls:['LICENSE CLASSIFICATION','License Classification'],
-    exp:['License Expiration Date','LicenseExpiration Date','Expiration Date'],
-    county:['COUNTY','County','county']
+    exp:['Expiration Date','License Expiration Date','LicenseExpiration Date'],
+    county:['County','COUNTY','county']
   }
 };
 
@@ -331,6 +331,23 @@ function populateLocaleSelect(){
   document.getElementById('locale-card').style.display = 'block';
 }
 
+function autoDetectLocale(){
+  if(!eiRef||!eiData.length) return;
+  const stateCol=detectCol(eiCols,['locationEState','locationEIssue','locationECountry']);
+  if(!stateCol) return;
+  const stateVal=norm(eiData[0][stateCol]);
+  if(!stateVal||stateVal.length!==2) return;
+  const locales=Object.keys(eiRef.localeInfo||{});
+  const match=locales.find(k=>{
+    const info=eiRef.localeInfo[k];
+    return (info.abbr||'').toUpperCase()===stateVal.toUpperCase();
+  });
+  if(match&&!document.getElementById('sel-locale').value){
+    document.getElementById('sel-locale').value=match;
+    onLocaleChange();
+  }
+}
+
 function onLocaleChange(){
   const locale = document.getElementById('sel-locale').value;
   activeLocale = locale;
@@ -361,18 +378,19 @@ function onLocaleChange(){
         if(s.eiValue === '{DO NOT LOAD}') doNotLoadValues.add(s.rawValue.toLowerCase().trim());
       }
     });
+    // Store FULL pipe-separated EI value (e.g. "Delivery|Retailer") — comparison uses overlap logic
     (dr.licenseTypes||[]).forEach(lt => {
       if(lt.rawValue && lt.eiValue){
-        dynamicLtMap[lt.rawValue.toLowerCase().trim()] = lt.eiValue.split('|')[0]; // take first EI type
+        dynamicLtMap[lt.rawValue.toLowerCase().trim()] = lt.eiValue;
       }
     });
   }
 
-  // Also build LT map from licenseTypeLookup
+  // Also build LT map from licenseTypeLookup (full value, no split)
   const ltLookup = (eiRef.licenseTypeLookup||{})[locale] || {};
   Object.entries(ltLookup).forEach(([raw, data]) => {
     const key = raw.toLowerCase().trim();
-    if(!dynamicLtMap[key]) dynamicLtMap[key] = data.eiLicenseType ? data.eiLicenseType.split('|')[0] : null;
+    if(!dynamicLtMap[key] && data.eiLicenseType) dynamicLtMap[key] = data.eiLicenseType;
   });
 
   // Update header
@@ -575,17 +593,63 @@ let activeTab='new';
 const TODAY=new Date('2026-04-06');
 
 /* ============================================================
-   FILE READING
+   LICENSE KEY NORMALIZATION — hyphen fix
+   ============================================================ */
+function normLicenseKey(v){
+  // Normalize separators, case, and whitespace so OCM-RETL-24-000259 = ocm retl 24 000259 = OCM_RETL_24_000259
+  return String(v||'').toLowerCase().trim()
+    .replace(/[\s\-_./\\]+/g,'-')
+    .replace(/^-+|-+$/g,'');
+}
+
+/* ============================================================
+   FILE READING — handles duplicate column names (169-col export)
    ============================================================ */
 function readFile(file,cb){
   const r=new FileReader();
   r.onload=e=>{
     const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
     const ws=wb.Sheets[wb.SheetNames[0]];
-    const rows=XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});
+    // Use header:1 to get raw arrays, then handle duplicates manually
+    const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
+    if(raw.length<2){cb([],[]);return;}
+    // Build deduplicated headers
+    const headers=[];
+    const seen={};
+    raw[0].forEach(h=>{
+      const k=(h||'').toString().replace(/\n/g,' ').trim();
+      if(!k){headers.push('__empty__');return;}
+      if(seen[k]===undefined){seen[k]=0;headers.push(k);}
+      else{seen[k]++;headers.push(k+'__'+seen[k]);}
+    });
+    // Build row objects — if a column appears twice, the FIRST occurrence wins (company fields > license fields for most)
+    // Exception: license-specific fields we prefer from the license section (second occurrence)
+    const licensePrefer=new Set(['expirationDate','issueDate','effectiveDate','licenseStatusValue',
+      'stateLicenseStatus','licenseTypes','primaryBusinessTypeValues','displayLicenseNumber',
+      'licenseNumber','designationValues','licenseSubTypeValue']);
+    const rows=raw.slice(1).filter(r=>r.some(v=>v!=='')).map(row=>{
+      const obj={};
+      headers.forEach((h,i)=>{
+        if(h==='__empty__') return;
+        const isSecond=h.includes('__');
+        const baseKey=isSecond?h.replace(/__\d+$/,''):h;
+        const val=row[i]!==undefined?String(row[i]):'';
+        if(!isSecond){
+          obj[h]=val;
+        } else {
+          // For license-preferred fields, let the second occurrence win if first is empty OR field is license-specific
+          if(licensePrefer.has(baseKey)){
+            if(!obj[baseKey]||obj[baseKey]==='') obj[baseKey]=val;
+          }
+          // Otherwise keep first occurrence (already set)
+        }
+      });
+      return obj;
+    });
     if(rows.length>0){
-      const clean=rows.map(row=>{const o={};Object.entries(row).forEach(([k,v])=>{o[k.replace(/\n/g,' ').trim()]=v;});return o;});
-      cb(clean,Object.keys(clean[0]));
+      // Expose clean column list (deduplicated base names only)
+      const cols=[...new Set(headers.map(h=>h.replace(/__\d+$/,'')).filter(h=>h!=='__empty__'))];
+      cb(rows,cols);
     } else cb([],[]);
   };
   r.readAsArrayBuffer(file);
@@ -612,7 +676,10 @@ function handleFile(file,side,fnId,dzId){
     populateSelects(side,cols);
     if(eiData.length>0&&regData.length>0){
       document.getElementById('config-section').style.display='block';
-      if(eiRef) document.getElementById('locale-card').style.display='block';
+      if(eiRef){
+        document.getElementById('locale-card').style.display='block';
+        autoDetectLocale();
+      }
     }
   });
 }
@@ -720,9 +787,9 @@ function runComparison(){
   const dnlCount = enrichedReg.length - suppressed.length;
 
   const eiMap=new Map();
-  eiData.forEach(r=>eiMap.set(norm(r[eiKey]).toLowerCase(),r));
+  eiData.forEach(r=>eiMap.set(normLicenseKey(r[eiKey]),r));
   const regMap=new Map();
-  suppressed.forEach(r=>regMap.set(norm(r[regKey]).toLowerCase(),r));
+  suppressed.forEach(r=>regMap.set(normLicenseKey(r[regKey]),r));
 
   const newRecs=[],removed=[],changed=[],expiring=[];
   const suppCols=new Set(['_MMCP','_EXP','_DBA','_SRC']);
@@ -784,12 +851,16 @@ function runComparison(){
         };
       }
 
-      // License type — TaxEnum aware
+      // License type — TaxEnum aware, OVERLAP matching (handles multi-value like "Delivery|Retailer")
       if(eiLtype&&regLtype){
         const rawType=norm(rec[regLtype]);
         const translated=translateLicenseType(rawType);
         const eiVal=norm(base[eiLtype]);
-        const match=(translated||rawType).toLowerCase()===eiVal.toLowerCase();
+        // Overlap check: match if any EI value from the translation appears in the EI DB value (or vice versa)
+        const compareVal=translated||rawType;
+        const eiSet=new Set(eiVal.split('|').map(v=>v.trim().toLowerCase()).filter(Boolean));
+        const cmpSet=new Set(compareVal.split('|').map(v=>v.trim().toLowerCase()).filter(Boolean));
+        const match=[...eiSet].some(v=>cmpSet.has(v))||[...cmpSet].some(v=>eiSet.has(v));
         row.flags.ltype={match,eiVal,regVal:rawType,translated,flagged:!match};
       }
 
