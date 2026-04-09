@@ -61,8 +61,8 @@ tr:nth-child(even){background:#11182744}
   </div>
 </div>
 
+<input type="file" id="fileInput" accept=".csv" style="display:none">
 <div class="drop" id="dropzone">
-  <input type="file" id="fileInput" accept=".csv" style="display:none">
   <div id="dropTitle" style="font-size:15px;font-weight:600;margin-bottom:6px">Drop Trevor CSV here</div>
   <div id="dropSub" style="color:#64748b">or click to browse — same CSV as the comparison tool</div>
 </div>
@@ -147,11 +147,11 @@ function parseCSV(text) {
 
 const dz=document.getElementById("dropzone");
 const fi=document.getElementById("fileInput");
-dz.onclick=()=>fi.click();
-dz.ondragover=e=>{e.preventDefault();dz.classList.add("over")};
-dz.ondragleave=()=>dz.classList.remove("over");
-dz.ondrop=e=>{e.preventDefault();dz.classList.remove("over");handleFile(e.dataTransfer.files[0])};
-fi.onchange=e=>handleFile(e.target.files[0]);
+dz.addEventListener("click",function(e){if(e.target!==fi)fi.click()});
+dz.addEventListener("dragover",function(e){e.preventDefault();dz.classList.add("over")});
+dz.addEventListener("dragleave",function(){dz.classList.remove("over")});
+dz.addEventListener("drop",function(e){e.preventDefault();dz.classList.remove("over");if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0])});
+fi.addEventListener("change",function(e){if(e.target.files[0])handleFile(e.target.files[0])});
 
 function handleFile(file) {
   if (!file) return;
