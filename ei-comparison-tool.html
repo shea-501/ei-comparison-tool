@@ -115,7 +115,7 @@ tr:hover td{background:#f9f8f6}
     <div class="header-title">License Comparison Tool</div>
     <div class="header-sub" id="header-sub">Emerald Intelligence — Select a locale to begin</div>
   </div>
-  <div class="header-version">v8.0</div>
+  <div class="header-version">v8.1</div>
 </div>
 <div class="main">
 
@@ -249,6 +249,12 @@ tr:hover td{background:#f9f8f6}
         <option value="status">Real status changes</option>
         <option value="ltype">License type mismatches</option>
         <option value="exp">Expiration mismatches</option>
+      </select>
+      <select id="filter-status" onchange="filterTable()">
+        <option value="">All statuses</option>
+        <option value="active">Active only</option>
+        <option value="inactive">Inactive only</option>
+        <option value="pending">Pending only</option>
       </select>
     </div>
     <div class="tab-content active" id="tc-new"><div class="tbl-wrap"><table id="tbl-new"></table></div></div>
@@ -581,6 +587,28 @@ function parseDate(v){
   if(!v||v===''||v==='nan') return null;
   const d=new Date(v);
   return isNaN(d)?null:d;
+}
+
+/* ============================================================
+   STATUS BUCKET — classifies any status value for filter UI
+   ============================================================ */
+function getStatusBucket(val){
+  if(!val) return '';
+  const v = val.toLowerCase().trim();
+  if(v.startsWith('active') || v==='current' || v==='deemed to continue' ||
+     v==='transferred' || v==='limited operations' || v==='delegated' ||
+     v==='active/active' || v==='approved/active') return 'active';
+  if(v.startsWith('pending') || v==='applicant' || v==='submitted' ||
+     v==='under review' || v==='incomplete' || v==='assigned' ||
+     v==='queue' || v==='new' || v==='initiated' || v==='conditional' ||
+     v.startsWith('application')) return 'pending';
+  if(v.startsWith('inactive') || v==='expired' || v==='revoked' ||
+     v==='surrendered' || v==='cancelled' || v==='canceled' ||
+     v==='withdrawn' || v==='denied' || v==='void' || v==='closed' ||
+     v==='lapsed' || v==='suspended' || v==='deactivated' ||
+     v==='failed to complete' || v==='rescinded' || v==='rejected') return 'inactive';
+  if(v.includes('active')) return 'active';
+  return 'other';
 }
 
 /* ============================================================
@@ -942,7 +970,15 @@ function renderNewTable(){
   const cols=Object.keys(rows[0]).filter(c=>!c.startsWith('_'));
   document.getElementById('tbl-new').innerHTML=
     '<thead><tr>'+cols.map(c=>`<th>${c}</th>`).join('')+'</tr></thead>'+
-    '<tbody>'+rows.map(r=>'<tr>'+cols.map(c=>`<td>${norm(r[c])}</td>`).join('')+'</tr>').join('')+'</tbody>';
+    '<tbody>'+rows.map(r=>{
+      const regStatusCol=document.getElementById('sel-reg-status').value;
+      const rawSt=regStatusCol?norm(r[regStatusCol]):'';
+      const regClassCol=document.getElementById('sel-reg-class').value;
+      const rawCls=regClassCol?norm(r[regClassCol]):'';
+      const translated=translateStatus(rawSt,rawCls)||rawSt;
+      const statusBucket=getStatusBucket(translated);
+      return'<tr data-status="'+statusBucket+'">'+cols.map(c=>`<td>${norm(r[c])}</td>`).join('')+'</tr>';
+    }).join('')+'</tbody>';
 }
 function renderRemovedTable(){
   const rows=results.removed;
@@ -950,7 +986,12 @@ function renderRemovedTable(){
   const cols=Object.keys(rows[0]);
   document.getElementById('tbl-removed').innerHTML=
     '<thead><tr>'+cols.map(c=>`<th>${c}</th>`).join('')+'</tr></thead>'+
-    '<tbody>'+rows.map(r=>'<tr>'+cols.map(c=>`<td>${norm(r[c])}</td>`).join('')+'</tr>').join('')+'</tbody>';
+    '<tbody>'+rows.map(r=>{
+      const eiStatusCol=document.getElementById('sel-ei-status').value;
+      const rawSt=eiStatusCol?norm(r[eiStatusCol]):'';
+      const statusBucket=getStatusBucket(rawSt);
+      return'<tr data-status="'+statusBucket+'">'+cols.map(c=>`<td>${norm(r[c])}</td>`).join('')+'</tr>';
+    }).join('')+'</tbody>';
 }
 
 function renderChangedTable(rows){
@@ -1035,7 +1076,7 @@ function renderChangedTable(rows){
     if(r.flags.ltype?.flagged) flags.push('ltype');
     if(r.flags.exp?.flagged||r.flags.exp?.expiredButActive) flags.push('exp');
 
-    return`<tr data-flags="${flags.join(',')}">
+    return`<tr data-flags="${flags.join(',')}" data-status="${r.flags.status?getStatusBucket(r.flags.status.eiVal):''}">
       <td style="font-weight:600;font-family:var(--font-mono);font-size:11px">${r.key}</td>
       <td>${addrCell}</td><td>${nameCell}</td><td>${statusCell}</td><td>${ltypeCell}</td><td>${expCell}</td><td>${enrichCell}</td><td>${otherCell}</td>
     </tr>`;
@@ -1058,7 +1099,7 @@ function renderExpiringTable(rows){
         ?`<span class="exp-warn">Within 90 days</span>`
         :`<span class="exp-soft">Within 180 days</span>`;
     const daysLabel=r.daysLeft<0?`<span class="exp-hard">${Math.abs(r.daysLeft)}d overdue</span>`:`<span>${r.daysLeft}d</span>`;
-    return`<tr data-severity="${r.severity}">
+    return`<tr data-severity="${r.severity}" data-status="${getStatusBucket(norm(r.rec[eiStatus]))}">
       <td style="font-weight:600;font-family:var(--font-mono);font-size:11px">${norm(r.rec[eiKey])}</td>
       <td>${norm(r.rec[eiName])}</td>
       <td>${norm(r.rec[eiLtype])}</td>
@@ -1082,18 +1123,21 @@ function switchTab(tab){
   });
   document.getElementById('search-input').value='';
   document.getElementById('filter-flag').value='';
+  document.getElementById('filter-status').value='';
   // Hide filter-flag on non-changed tabs
   document.getElementById('filter-flag').style.display=tab==='changed'?'':'none';
 }
 function filterTable(){
   const q=document.getElementById('search-input').value.toLowerCase();
   const ff=document.getElementById('filter-flag').value;
+  const sf=document.getElementById('filter-status').value;
   const tbl=document.getElementById(`tbl-${activeTab}`);
   if(!tbl) return;
   [...tbl.querySelectorAll('tbody tr')].forEach(tr=>{
     const tok=!q||tr.textContent.toLowerCase().includes(q);
     const fok=!ff||(tr.dataset.flags||'').includes(ff)||(tr.dataset.severity||'').includes(ff);
-    tr.style.display=tok&&fok?'':'none';
+    const sok=!sf||(tr.dataset.status||'')===sf;
+    tr.style.display=tok&&fok&&sok?'':'none';
   });
 }
 
