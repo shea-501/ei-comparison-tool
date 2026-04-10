@@ -115,7 +115,7 @@ tr:hover td{background:#f9f8f6}
     <div class="header-title">License Comparison Tool</div>
     <div class="header-sub" id="header-sub">Emerald Intelligence — Select a locale to begin</div>
   </div>
-  <div class="header-version">v8.1</div>
+  <div class="header-version">v8.1.1</div>
 </div>
 <div class="main">
 
@@ -1124,8 +1124,11 @@ function switchTab(tab){
   document.getElementById('search-input').value='';
   document.getElementById('filter-flag').value='';
   document.getElementById('filter-status').value='';
-  // Hide filter-flag on non-changed tabs
-  document.getElementById('filter-flag').style.display=tab==='changed'?'':'none';
+  // Hide filter-flag on non-changed/expiring tabs
+  document.getElementById('filter-flag').style.display=(tab==='changed'||tab==='expiring')?'':'none';
+  // Show status filter only if a status column is mapped
+  const hasStatus=!!(document.getElementById('sel-ei-status').value||document.getElementById('sel-reg-status').value);
+  document.getElementById('filter-status').style.display=hasStatus?'':'none';
 }
 function filterTable(){
   const q=document.getElementById('search-input').value.toLowerCase();
@@ -1136,7 +1139,7 @@ function filterTable(){
   [...tbl.querySelectorAll('tbody tr')].forEach(tr=>{
     const tok=!q||tr.textContent.toLowerCase().includes(q);
     const fok=!ff||(tr.dataset.flags||'').includes(ff)||(tr.dataset.severity||'').includes(ff);
-    const sok=!sf||(tr.dataset.status||'')===sf;
+    const sok=!sf||!tr.dataset.status||(tr.dataset.status===sf);
     tr.style.display=tok&&fok&&sok?'':'none';
   });
 }
@@ -1206,6 +1209,18 @@ function exportTab(){
   else if(activeTab==='changed') data=buildChangedRows();
   else data=buildExpiringRows();
   if(!data.length){alert('No data to export.');return;}
+  // Respect current filters — get visible row indices from DOM
+  const tbl=document.getElementById(`tbl-${activeTab}`);
+  if(tbl){
+    const visibleIdx=new Set();
+    [...tbl.querySelectorAll('tbody tr')].forEach((tr,i)=>{
+      if(tr.style.display!=='none') visibleIdx.add(i);
+    });
+    // If filters are active (not all rows visible), filter the data (skip header row at index 0)
+    if(visibleIdx.size<data.length-1){
+      data=[data[0],...data.slice(1).filter((_,i)=>visibleIdx.has(i))];
+    }
+  }
   const ws=XLSX.utils.aoa_to_sheet(data),wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,activeTab);
   XLSX.writeFile(wb,`ei_comparison_${activeTab}_${new Date().toISOString().slice(0,10)}.xlsx`);
