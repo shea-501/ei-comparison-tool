@@ -106,6 +106,9 @@ tr:hover td{background:#f9f8f6}
 .btn-primary{background:var(--brand)!important;color:#fff!important;border-color:var(--brand)!important}
 .btn-primary:hover{background:var(--highlight)!important;border-color:var(--highlight)!important}
 .empty-state{padding:40px;text-align:center;color:var(--text-faint);font-size:13px}
+.scope-check{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--text-muted);cursor:pointer;padding:6px 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);transition:all .15s;user-select:none}
+.scope-check:has(input:checked){background:#EAF3DE;border-color:#C0DD97;color:#27500A}
+.scope-check input{accent-color:var(--green);cursor:pointer}
 </style>
 </head>
 <body>
@@ -115,7 +118,7 @@ tr:hover td{background:#f9f8f6}
     <div class="header-title">License Comparison Tool</div>
     <div class="header-sub" id="header-sub">Emerald Intelligence — Select a locale to begin</div>
   </div>
-  <div class="header-version">v8.1.1</div>
+  <div class="header-version">v9.0</div>
 </div>
 <div class="main">
 
@@ -177,47 +180,53 @@ tr:hover td{background:#f9f8f6}
 
 
 <div class="card config-section" id="config-section">
-  <div class="card-title">Column mapping</div>
+  <div class="card-title">Comparison scope</div>
+  <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Select which fields to compare — only checked fields will be evaluated</div>
+  <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px">
+    <label class="scope-check"><input type="checkbox" id="chk-addr" onchange="toggleScope()"> Address</label>
+    <label class="scope-check"><input type="checkbox" id="chk-name" onchange="toggleScope()"> Name</label>
+    <label class="scope-check"><input type="checkbox" id="chk-status" onchange="toggleScope()"> Status</label>
+    <label class="scope-check"><input type="checkbox" id="chk-ltype" onchange="toggleScope()"> License Type</label>
+    <label class="scope-check"><input type="checkbox" id="chk-exp" onchange="toggleScope()"> Expiration</label>
+  </div>
+  <div class="divider"></div>
+  <div class="card-title" style="margin-top:14px">Column mapping</div>
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px">
     <div>
-      <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:7px">Join key</div>
+      <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:7px">Join key <span style="color:var(--red);font-size:9px">REQUIRED</span></div>
       <div class="map-grid"><div><div class="map-label">EI DB</div><select id="sel-ei-key"></select></div><div class="map-arrow">↔</div><div><div class="map-label">Regulator</div><select id="sel-reg-key"></select></div></div>
     </div>
-    <div>
+    <div id="map-addr" style="display:none">
       <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:7px">Address</div>
       <div class="map-grid"><div><div class="map-label">EI DB</div><select id="sel-ei-addr"></select></div><div class="map-arrow">↔</div><div><div class="map-label">Regulator</div><select id="sel-reg-addr"></select></div></div>
     </div>
-    <div>
+    <div id="map-name" style="display:none">
       <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:7px">Name <span class="info-pill">allnames aware</span></div>
       <div class="map-grid"><div><div class="map-label">EI DB</div><select id="sel-ei-name"></select></div><div class="map-arrow">↔</div><div><div class="map-label">Regulator</div><select id="sel-reg-name"></select></div></div>
       <div style="margin-top:5px"><div class="map-label">EI allnames col (optional)</div><select id="sel-ei-allnames"></select></div>
     </div>
-    <div>
+    <div id="map-status" style="display:none">
       <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:7px">Status <span class="info-pill">TaxEnum aware</span></div>
       <div class="map-grid"><div><div class="map-label">EI DB</div><select id="sel-ei-status"></select></div><div class="map-arrow">↔</div><div><div class="map-label">Regulator</div><select id="sel-reg-status"></select></div></div>
       <div style="margin-top:5px"><div class="map-label">Regulator classification (optional)</div><select id="sel-reg-class"></select></div>
     </div>
   </div>
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px">
-    <div>
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:14px">
+    <div id="map-ltype" style="display:none">
       <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:7px">License type <span class="info-pill">TaxEnum aware</span></div>
       <div class="map-grid"><div><div class="map-label">EI DB</div><select id="sel-ei-ltype"></select></div><div class="map-arrow">↔</div><div><div class="map-label">Regulator</div><select id="sel-reg-ltype"></select></div></div>
     </div>
-    <div>
+    <div id="map-exp" style="display:none">
       <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:7px">Expiration date</div>
       <div class="map-grid"><div><div class="map-label">EI DB</div><select id="sel-ei-exp"></select></div><div class="map-arrow">↔</div><div><div class="map-label">Regulator</div><select id="sel-reg-exp"></select></div></div>
-    </div>
-    <div>
-      <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:7px">County</div>
-      <div class="map-grid"><div><div class="map-label">EI DB</div><select id="sel-ei-county"></select></div><div class="map-arrow">↔</div><div><div class="map-label">Regulator</div><select id="sel-reg-county"></select></div></div>
     </div>
   </div>
   <div class="divider"></div>
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
     <div class="threshold-row">
-      <div class="threshold-item"><span>Address threshold</span><input type="range" min="0" max="100" value="40" step="1" id="addr-threshold"><span class="threshold-val" id="addr-tval">40%</span></div>
-      <div class="threshold-item"><span>Name threshold</span><input type="range" min="50" max="100" value="70" step="1" id="name-threshold"><span class="threshold-val" id="name-tval">70%</span></div>
-      <div class="threshold-item"><span>Expiring soon (days)</span><input type="number" id="exp-days" value="180" min="30" max="730" style="width:64px"></div>
+      <div class="threshold-item" id="thresh-addr" style="display:none"><span>Address threshold</span><input type="range" min="0" max="100" value="40" step="1" id="addr-threshold"><span class="threshold-val" id="addr-tval">40%</span></div>
+      <div class="threshold-item" id="thresh-name" style="display:none"><span>Name threshold</span><input type="range" min="50" max="100" value="70" step="1" id="name-threshold"><span class="threshold-val" id="name-tval">70%</span></div>
+      <div class="threshold-item" id="thresh-exp" style="display:none"><span>Expiring soon (days)</span><input type="number" id="exp-days" value="180" min="30" max="730" style="width:64px"></div>
     </div>
     <button class="run-btn" onclick="runComparison()">Run comparison →</button>
   </div>
@@ -281,8 +290,7 @@ const COL_HINTS = {
     allnames:['merged_allnames','allnames','aliasarray','DBANamesManual'],
     status:['stateLicenseStatus','licenseStatusValue','LICENSE STATUS','status'],
     ltype:['licenseTypes','primaryBusinessTypeValues','approvedLicenseTypeValue','LICENSE TYPE'],
-    exp:['expirationDate','License Expiration Date','LicenseExpiration Date','Expiration Date'],
-    county:['locationECounty','COUNTY','County','county']
+    exp:['expirationDate','License Expiration Date','LicenseExpiration Date','Expiration Date']
   },
   reg:{
     key:['License Number','LICENSE NUMBER','license_number','displayLicenseNumber','Dual-Use License Number'],
@@ -291,8 +299,7 @@ const COL_HINTS = {
     status:['License Status','LICENSE STATUS','status'],
     ltype:['License Type','LICENSE TYPE','License Type/Sub Type'],
     cls:['LICENSE CLASSIFICATION','License Classification'],
-    exp:['Expiration Date','License Expiration Date','LicenseExpiration Date'],
-    county:['County','COUNTY','county']
+    exp:['Expiration Date','License Expiration Date','LicenseExpiration Date']
   }
 };
 
@@ -729,8 +736,8 @@ function detectCol(cols,candidates){
 }
 function populateSelects(side,cols){
   const fields=side==='ei'
-    ?['key','addr','name','allnames','status','ltype','exp','county']
-    :['key','addr','name','status','ltype','exp','county'];
+    ?['key','addr','name','allnames','status','ltype','exp']
+    :['key','addr','name','status','ltype','exp'];
   fields.forEach(t=>{
     const sel=document.getElementById(`sel-${side}-${t}`);
     if(!sel) return;
@@ -749,6 +756,19 @@ function populateSelects(side,cols){
 
 document.getElementById('addr-threshold').addEventListener('input',function(){document.getElementById('addr-tval').textContent=this.value+'%';});
 document.getElementById('name-threshold').addEventListener('input',function(){document.getElementById('name-tval').textContent=this.value+'%';});
+
+function toggleScope(){
+  const fields=['addr','name','status','ltype','exp'];
+  fields.forEach(f=>{
+    const on=document.getElementById(`chk-${f}`).checked;
+    const map=document.getElementById(`map-${f}`);
+    if(map) map.style.display=on?'':'none';
+  });
+  // Show/hide relevant thresholds
+  document.getElementById('thresh-addr').style.display=document.getElementById('chk-addr').checked?'':'none';
+  document.getElementById('thresh-name').style.display=document.getElementById('chk-name').checked?'':'none';
+  document.getElementById('thresh-exp').style.display=document.getElementById('chk-exp').checked?'':'none';
+}
 
 /* ============================================================
    SUPPLEMENTAL MERGE
@@ -786,20 +806,26 @@ function runComparison(){
   const regKey=document.getElementById('sel-reg-key').value;
   if(!eiKey||!regKey){alert('Please select join key columns.');return;}
 
-  const eiAddr=document.getElementById('sel-ei-addr').value;
-  const regAddr=document.getElementById('sel-reg-addr').value;
-  const eiName=document.getElementById('sel-ei-name').value;
-  const eiAllnames=document.getElementById('sel-ei-allnames').value;
-  const regName=document.getElementById('sel-reg-name').value;
-  const eiStatus=document.getElementById('sel-ei-status').value;
-  const regStatus=document.getElementById('sel-reg-status').value;
-  const regClass=document.getElementById('sel-reg-class').value;
-  const eiLtype=document.getElementById('sel-ei-ltype').value;
-  const regLtype=document.getElementById('sel-reg-ltype').value;
-  const eiExp=document.getElementById('sel-ei-exp').value;
-  const regExp=document.getElementById('sel-reg-exp').value;
-  const eiCounty=document.getElementById('sel-ei-county').value;
-  const regCounty=document.getElementById('sel-reg-county').value;
+  // Scope checks
+  const doAddr=document.getElementById('chk-addr').checked;
+  const doName=document.getElementById('chk-name').checked;
+  const doStatus=document.getElementById('chk-status').checked;
+  const doLtype=document.getElementById('chk-ltype').checked;
+  const doExp=document.getElementById('chk-exp').checked;
+  if(!doAddr&&!doName&&!doStatus&&!doLtype&&!doExp){alert('Please select at least one field to compare.');return;}
+
+  const eiAddr=doAddr?document.getElementById('sel-ei-addr').value:'';
+  const regAddr=doAddr?document.getElementById('sel-reg-addr').value:'';
+  const eiName=doName?document.getElementById('sel-ei-name').value:'';
+  const eiAllnames=doName?document.getElementById('sel-ei-allnames').value:'';
+  const regName=doName?document.getElementById('sel-reg-name').value:'';
+  const eiStatus=doStatus?document.getElementById('sel-ei-status').value:'';
+  const regStatus=doStatus?document.getElementById('sel-reg-status').value:'';
+  const regClass=doStatus?document.getElementById('sel-reg-class').value:'';
+  const eiLtype=doLtype?document.getElementById('sel-ei-ltype').value:'';
+  const regLtype=doLtype?document.getElementById('sel-reg-ltype').value:'';
+  const eiExp=doExp?document.getElementById('sel-ei-exp').value:'';
+  const regExp=doExp?document.getElementById('sel-reg-exp').value:'';
   const addrT=parseInt(document.getElementById('addr-threshold').value);
   const nameT=parseInt(document.getElementById('name-threshold').value);
   const expDays=parseInt(document.getElementById('exp-days').value)||180;
@@ -917,7 +943,7 @@ function runComparison(){
       ['_MMCP','_EXP','_DBA','_SRC'].forEach(f=>{if(rec[f])row.enriched[f]=rec[f];});
 
       // Other diffs
-      const skipCols=new Set([regKey,regAddr,regName,regStatus,regClass,regLtype,regExp,regCounty].filter(Boolean));
+      const skipCols=new Set([regKey,regAddr,regName,regStatus,regClass,regLtype,regExp].filter(Boolean));
       Object.keys(rec).filter(c=>!skipCols.has(c)&&!suppCols.has(c)&&eiCols.includes(c)).forEach(c=>{
         if(norm(base[c])!==norm(rec[c])) row.otherDiffs[c]={old:norm(base[c]),new:norm(rec[c])};
       });
@@ -1123,25 +1149,57 @@ function switchTab(tab){
   });
   document.getElementById('search-input').value='';
   document.getElementById('filter-flag').value='';
-  document.getElementById('filter-status').value='';
+  // Keep filter-status across tabs — don't reset it
   // Hide filter-flag on non-changed/expiring tabs
   document.getElementById('filter-flag').style.display=(tab==='changed'||tab==='expiring')?'':'none';
   // Show status filter only if a status column is mapped
   const hasStatus=!!(document.getElementById('sel-ei-status').value||document.getElementById('sel-reg-status').value);
   document.getElementById('filter-status').style.display=hasStatus?'':'none';
+  filterTable();
 }
 function filterTable(){
   const q=document.getElementById('search-input').value.toLowerCase();
   const ff=document.getElementById('filter-flag').value;
   const sf=document.getElementById('filter-status').value;
-  const tbl=document.getElementById(`tbl-${activeTab}`);
-  if(!tbl) return;
-  [...tbl.querySelectorAll('tbody tr')].forEach(tr=>{
-    const tok=!q||tr.textContent.toLowerCase().includes(q);
-    const fok=!ff||(tr.dataset.flags||'').includes(ff)||(tr.dataset.severity||'').includes(ff);
-    const sok=!sf||!tr.dataset.status||(tr.dataset.status===sf);
-    tr.style.display=tok&&fok&&sok?'':'none';
+  // Apply filters across ALL tabs, not just the active one
+  ['new','removed','changed','expiring'].forEach(tab=>{
+    const tbl=document.getElementById(`tbl-${tab}`);
+    if(!tbl) return;
+    [...tbl.querySelectorAll('tbody tr')].forEach(tr=>{
+      const tok=!q||tr.textContent.toLowerCase().includes(q);
+      const fok=!ff||(tr.dataset.flags||'').includes(ff)||(tr.dataset.severity||'').includes(ff);
+      const sok=!sf||!tr.dataset.status||(tr.dataset.status===sf);
+      tr.style.display=tok&&fok&&sok?'':'none';
+    });
   });
+  // Update counts based on visible rows
+  const count=tab=>{const t=document.getElementById(`tbl-${tab}`);return t?[...t.querySelectorAll('tbody tr')].filter(r=>r.style.display!=='none').length:0;};
+  const nNew=count('new'),nRem=count('removed'),nChg=count('changed'),nExp=count('expiring');
+  const isFiltered=!!(q||ff||sf);
+  document.getElementById('s-new').textContent=nNew;
+  document.getElementById('s-removed').textContent=nRem;
+  document.getElementById('s-changed').textContent=nChg;
+  document.getElementById('s-expiring').textContent=nExp;
+  document.getElementById('cnt-new').textContent=nNew;
+  document.getElementById('cnt-removed').textContent=nRem;
+  document.getElementById('cnt-changed').textContent=nChg;
+  document.getElementById('cnt-expiring').textContent=nExp;
+  // Update address/name flag counts for changed tab
+  if(isFiltered){
+    const chgTbl=document.getElementById('tbl-changed');
+    let addrF=0,nameF=0;
+    if(chgTbl)[...chgTbl.querySelectorAll('tbody tr')].filter(r=>r.style.display!=='none').forEach(tr=>{
+      const fl=tr.dataset.flags||'';
+      if(fl.includes('addr')) addrF++;
+      if(fl.includes('name')) nameF++;
+    });
+    document.getElementById('s-addr').textContent=addrF;
+    document.getElementById('s-name').textContent=nameF;
+  } else {
+    // Reset to full counts
+    document.getElementById('s-addr').textContent=results.changed.filter(r=>r.flags.addr?.flagged).length;
+    document.getElementById('s-name').textContent=results.changed.filter(r=>r.flags.name?.flagged).length;
+  }
 }
 
 /* ============================================================
