@@ -123,7 +123,7 @@ tr.row-active:hover td{background:#e6f5ee}
     <div class="header-title">License Comparison Tool</div>
     <div class="header-sub" id="header-sub">Emerald Intelligence — Select a locale to begin</div>
   </div>
-  <div class="header-version">v9.5</div>
+  <div class="header-version">v9.6</div>
 </div>
 <div class="main">
 
@@ -1356,11 +1356,14 @@ function filterTable(){
   const ff=document.getElementById('filter-flag').value;
   const sf=document.getElementById('filter-status').value;
   const lt=document.getElementById('filter-ltype').value;
-  // Apply filters across ALL tabs, not just the active one
+  // Apply filters across ALL tabs, not just the active one.
+  // Skip empty-state placeholder rows — the browser wraps our bare <tr> in an implicit <tbody>, and without this
+  // guard the "No new records found" row would be counted toward the tab badge and summary card.
   ['new','removed','changed','expiring'].forEach(tab=>{
     const tbl=document.getElementById(`tbl-${tab}`);
     if(!tbl) return;
     [...tbl.querySelectorAll('tbody tr')].forEach(tr=>{
+      if(tr.querySelector('.empty-state')) return;
       const tok=!q||tr.textContent.toLowerCase().includes(q);
       const fok=!ff||(tr.dataset.flags||'').includes(ff)||(tr.dataset.severity||'').includes(ff);
       const sok=!sf||!tr.dataset.status||(tr.dataset.status===sf);
@@ -1369,7 +1372,7 @@ function filterTable(){
     });
   });
   // Update counts based on visible rows
-  const count=tab=>{const t=document.getElementById(`tbl-${tab}`);return t?[...t.querySelectorAll('tbody tr')].filter(r=>r.style.display!=='none').length:0;};
+  const count=tab=>{const t=document.getElementById(`tbl-${tab}`);return t?[...t.querySelectorAll('tbody tr')].filter(r=>r.style.display!=='none'&&!r.querySelector('.empty-state')).length:0;};
   const nNew=count('new'),nRem=count('removed'),nChg=count('changed'),nExp=count('expiring');
   const isFiltered=!!(q||ff||sf||lt);
   document.getElementById('s-new').textContent=nNew;
