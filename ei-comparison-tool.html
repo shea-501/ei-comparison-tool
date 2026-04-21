@@ -80,6 +80,8 @@ th{position:sticky;top:0;z-index:1;background:var(--bg);padding:7px 10px;text-al
 td{padding:6px 10px;border-bottom:1px solid var(--border);vertical-align:top;word-break:break-word;max-width:200px;line-height:1.4}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:#f9f8f6}
+tr.row-active td{background:#f0fbf7}
+tr.row-active:hover td{background:#e6f5ee}
 .diff-old{text-decoration:line-through;color:var(--red);font-size:11px;display:block}
 .diff-new{color:var(--green);font-size:11px;font-weight:500;display:block}
 .translated{font-size:10px;color:var(--blue);font-style:italic;display:block;margin-top:1px}
@@ -118,7 +120,7 @@ tr:hover td{background:#f9f8f6}
     <div class="header-title">License Comparison Tool</div>
     <div class="header-sub" id="header-sub">Emerald Intelligence — Select a locale to begin</div>
   </div>
-  <div class="header-version">v9.1</div>
+  <div class="header-version">v9.2</div>
 </div>
 <div class="main">
 
@@ -1049,32 +1051,46 @@ function populateStatusFilter(){
    ============================================================ */
 function getNewTabCols(rows){
   const allCols=Object.keys(rows[0]).filter(c=>!c.startsWith('_'));
-  if(newTabShowAll) return allCols;
-  const keyOrder=['sel-reg-key','sel-reg-name','sel-reg-status','sel-reg-addr','sel-reg-ltype','sel-reg-exp'];
-  const keyCols=[];
-  keyOrder.forEach(id=>{
-    const v=document.getElementById(id)?.value;
-    if(v&&allCols.includes(v)&&!keyCols.includes(v)) keyCols.push(v);
-  });
-  return keyCols.length?keyCols:allCols;
+  let cols;
+  if(newTabShowAll) cols=allCols;
+  else {
+    const keyOrder=['sel-reg-key','sel-reg-name','sel-reg-status','sel-reg-addr','sel-reg-ltype','sel-reg-exp'];
+    const keyCols=[];
+    keyOrder.forEach(id=>{
+      const v=document.getElementById(id)?.value;
+      if(v&&allCols.includes(v)&&!keyCols.includes(v)) keyCols.push(v);
+    });
+    cols=keyCols.length?keyCols:allCols;
+  }
+  // Inject synthetic "EI Status" column right after the regulator status column
+  const statusCol=document.getElementById('sel-reg-status')?.value;
+  if(statusCol&&cols.includes(statusCol)){
+    const i=cols.indexOf(statusCol);
+    cols=[...cols.slice(0,i+1),'__ei_status__',...cols.slice(i+1)];
+  }
+  return cols;
 }
 function renderNewTable(){
   const rows=results.newRecs;
   if(!rows.length){document.getElementById('tbl-new').innerHTML='<tr><td class="empty-state">No new records found</td></tr>';return;}
   const cols=getNewTabCols(rows);
   document.getElementById('tbl-new').innerHTML=
-    '<thead><tr>'+cols.map(c=>`<th>${c}</th>`).join('')+'</tr></thead>'+
+    '<thead><tr>'+cols.map(c=>`<th>${c==='__ei_status__'?'EI Status':c}</th>`).join('')+'</tr></thead>'+
     '<tbody>'+rows.map(r=>{
       const regStatusCol=document.getElementById('sel-reg-status').value;
       const rawSt=regStatusCol?norm(r[regStatusCol]):'';
       const regClassCol=document.getElementById('sel-reg-class').value;
       const rawCls=regClassCol?norm(r[regClassCol]):'';
-      const translated=translateStatus(rawSt,rawCls)||rawSt;
-      const statusBucket=getStatusBucket(translated);
+      const trueTrans=translateStatus(rawSt,rawCls);
+      const statusBucket=getStatusBucket(trueTrans||rawSt);
       const regLtypeCol=document.getElementById('sel-reg-ltype').value;
       const rawLt=regLtypeCol?norm(r[regLtypeCol]):'';
       const ltypeVal=(translateLicenseType(rawLt)||rawLt).replace(/"/g,'');
-      return'<tr data-status="'+statusBucket+'" data-ltype="'+ltypeVal+'">'+cols.map(c=>`<td>${norm(r[c])}</td>`).join('')+'</tr>';
+      const rowCls=trueTrans==='Active'?'row-active':'';
+      return'<tr class="'+rowCls+'" data-status="'+statusBucket+'" data-ltype="'+ltypeVal+'">'+cols.map(c=>{
+        if(c==='__ei_status__') return`<td>${trueTrans||'<span style="color:var(--text-faint)">—</span>'}</td>`;
+        return`<td>${norm(r[c])}</td>`;
+      }).join('')+'</tr>';
     }).join('')+'</tbody>';
 }
 function renderRemovedTable(){
@@ -1289,8 +1305,21 @@ function filterTable(){
    ============================================================ */
 function buildNewRows(){
   const rows=results.newRecs;if(!rows.length)return[];
-  const cols=Object.keys(rows[0]).filter(c=>!c.startsWith('_'));
-  return[cols,...rows.map(r=>cols.map(c=>norm(r[c])))];
+  const baseCols=Object.keys(rows[0]).filter(c=>!c.startsWith('_'));
+  const regStatusCol=document.getElementById('sel-reg-status').value;
+  const regClassCol=document.getElementById('sel-reg-class').value;
+  let cols=baseCols;
+  if(regStatusCol&&cols.includes(regStatusCol)){
+    const i=cols.indexOf(regStatusCol);
+    cols=[...cols.slice(0,i+1),'__ei_status__',...cols.slice(i+1)];
+  }
+  const headers=cols.map(c=>c==='__ei_status__'?'EI Status':c);
+  return[headers,...rows.map(r=>{
+    const rawSt=regStatusCol?norm(r[regStatusCol]):'';
+    const rawCls=regClassCol?norm(r[regClassCol]):'';
+    const trueTrans=translateStatus(rawSt,rawCls)||'';
+    return cols.map(c=>c==='__ei_status__'?trueTrans:norm(r[c]));
+  })];
 }
 function buildRemovedRows(){
   const rows=results.removed;if(!rows.length)return[];
@@ -1367,9 +1396,23 @@ function exportTab(){
 }
 function exportAll(){
   const wb=XLSX.utils.book_new();
-  [['New Records',buildNewRows()],['Missing Records',buildRemovedRows()],
-   ['Changed Records',buildChangedRows()],['Expiring Soon',buildExpiringRows()]].forEach(([name,data])=>{
-    if(data.length) XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),name);
+  [['New Records','new',buildNewRows()],
+   ['Missing Records','removed',buildRemovedRows()],
+   ['Changed Records','changed',buildChangedRows()],
+   ['Expiring Soon','expiring',buildExpiringRows()]].forEach(([name,tabId,data])=>{
+    if(!data.length) return;
+    // Respect current filters — get visible row indices from DOM
+    const tbl=document.getElementById(`tbl-${tabId}`);
+    if(tbl){
+      const visibleIdx=new Set();
+      [...tbl.querySelectorAll('tbody tr')].forEach((tr,i)=>{
+        if(tr.style.display!=='none') visibleIdx.add(i);
+      });
+      if(visibleIdx.size<data.length-1){
+        data=[data[0],...data.slice(1).filter((_,i)=>visibleIdx.has(i))];
+      }
+    }
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),name);
   });
   XLSX.writeFile(wb,`ei_comparison_all_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
