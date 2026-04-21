@@ -123,7 +123,7 @@ tr.row-active:hover td{background:#e6f5ee}
     <div class="header-title">License Comparison Tool</div>
     <div class="header-sub" id="header-sub">Emerald Intelligence — Select a locale to begin</div>
   </div>
-  <div class="header-version">v9.6</div>
+  <div class="header-version">v9.7</div>
 </div>
 <div class="main">
 
@@ -1169,7 +1169,7 @@ function getNewTabCols(rows){
 }
 function renderNewTable(){
   const rows=results.newRecs;
-  if(!rows.length){document.getElementById('tbl-new').innerHTML='<tr><td class="empty-state">No new records found</td></tr>';return;}
+  if(!rows.length){document.getElementById('tbl-new').innerHTML='<tbody class="empty-body"><tr><td class="empty-state">No new records found</td></tr></tbody>';return;}
   const cols=getNewTabCols(rows);
   document.getElementById('tbl-new').innerHTML=
     '<thead><tr>'+cols.map(c=>`<th>${c==='__ei_status__'?'EI Status':c}</th>`).join('')+'</tr></thead>'+
@@ -1193,7 +1193,7 @@ function renderNewTable(){
 }
 function renderRemovedTable(){
   const rows=results.removed;
-  if(!rows.length){document.getElementById('tbl-removed').innerHTML='<tr><td class="empty-state">No removed records</td></tr>';return;}
+  if(!rows.length){document.getElementById('tbl-removed').innerHTML='<tbody class="empty-body"><tr><td class="empty-state">No removed records</td></tr></tbody>';return;}
   const cols=Object.keys(rows[0]);
   document.getElementById('tbl-removed').innerHTML=
     '<thead><tr>'+cols.map(c=>`<th>${c}</th>`).join('')+'</tr></thead>'+
@@ -1208,7 +1208,7 @@ function renderRemovedTable(){
 }
 
 function renderChangedTable(rows){
-  if(!rows.length){document.getElementById('tbl-changed').innerHTML='<tr><td class="empty-state">No changed records</td></tr>';return;}
+  if(!rows.length){document.getElementById('tbl-changed').innerHTML='<tbody class="empty-body"><tr><td class="empty-state">No changed records</td></tr></tbody>';return;}
   const head='<thead><tr><th>License #</th><th>Address</th><th>Name</th><th>Status</th><th>License type</th><th>Expiration</th><th>Enriched</th><th>Other</th></tr></thead>';
   const body='<tbody>'+rows.map(r=>{
     // Address
@@ -1299,7 +1299,7 @@ function renderChangedTable(rows){
 }
 
 function renderExpiringTable(rows){
-  if(!rows.length){document.getElementById('tbl-expiring').innerHTML='<tr><td class="empty-state">No expiring licenses found in the selected window</td></tr>';return;}
+  if(!rows.length){document.getElementById('tbl-expiring').innerHTML='<tbody class="empty-body"><tr><td class="empty-state">No expiring licenses found in the selected window</td></tr></tbody>';return;}
   const sorted=[...rows].sort((a,b)=>a.daysLeft-b.daysLeft);
   const head='<thead><tr><th>License #</th><th>Name</th><th>License type</th><th>Status in EI</th><th>Expiration date</th><th>Days left</th><th>Severity</th></tr></thead>';
   const body='<tbody>'+sorted.map(r=>{
@@ -1357,13 +1357,11 @@ function filterTable(){
   const sf=document.getElementById('filter-status').value;
   const lt=document.getElementById('filter-ltype').value;
   // Apply filters across ALL tabs, not just the active one.
-  // Skip empty-state placeholder rows — the browser wraps our bare <tr> in an implicit <tbody>, and without this
-  // guard the "No new records found" row would be counted toward the tab badge and summary card.
+  // Empty-state placeholder rows live in <tbody class="empty-body"> so they're excluded from both iteration and count.
   ['new','removed','changed','expiring'].forEach(tab=>{
     const tbl=document.getElementById(`tbl-${tab}`);
     if(!tbl) return;
-    [...tbl.querySelectorAll('tbody tr')].forEach(tr=>{
-      if(tr.querySelector('.empty-state')) return;
+    [...tbl.querySelectorAll('tbody:not(.empty-body) tr')].forEach(tr=>{
       const tok=!q||tr.textContent.toLowerCase().includes(q);
       const fok=!ff||(tr.dataset.flags||'').includes(ff)||(tr.dataset.severity||'').includes(ff);
       const sok=!sf||!tr.dataset.status||(tr.dataset.status===sf);
@@ -1372,7 +1370,7 @@ function filterTable(){
     });
   });
   // Update counts based on visible rows
-  const count=tab=>{const t=document.getElementById(`tbl-${tab}`);return t?[...t.querySelectorAll('tbody tr')].filter(r=>r.style.display!=='none'&&!r.querySelector('.empty-state')).length:0;};
+  const count=tab=>{const t=document.getElementById(`tbl-${tab}`);return t?[...t.querySelectorAll('tbody:not(.empty-body) tr')].filter(r=>r.style.display!=='none').length:0;};
   const nNew=count('new'),nRem=count('removed'),nChg=count('changed'),nExp=count('expiring');
   const isFiltered=!!(q||ff||sf||lt);
   document.getElementById('s-new').textContent=nNew;
