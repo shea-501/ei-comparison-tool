@@ -120,7 +120,7 @@ tr.row-active:hover td{background:#e6f5ee}
     <div class="header-title">License Comparison Tool</div>
     <div class="header-sub" id="header-sub">Emerald Intelligence — Select a locale to begin</div>
   </div>
-  <div class="header-version">v9.3</div>
+  <div class="header-version">v9.4</div>
 </div>
 <div class="main">
 
@@ -912,18 +912,21 @@ function runComparison(){
         row.flags.name={score,eiVal:norm(base[eiName]),regVal:rn,matchedAlias,flagged:score<nameT};
       }
 
-      // Status — TaxEnum aware, stateLicenseStatus preferred
+      // Status — TaxEnum aware, stateLicenseStatus preferred. Both sides run through translateStatus so
+      // raw EI values like "Active - Certificate of Operation" normalize to "Active" for comparison.
       if(eiStatus&&regStatus){
         const rawStatus=norm(rec[regStatus]);
         const rawClass=regClass?norm(rec[regClass]):'';
         const translated=translateStatus(rawStatus,rawClass);
         const eiVal=norm(base[eiStatus]);
-        const translatedOrRaw=translated||rawStatus;
-        const match=translatedOrRaw.toLowerCase()===eiVal.toLowerCase();
+        const translatedEi=translateStatus(eiVal,'');
+        const regNorm=translated||rawStatus;
+        const eiNorm=translatedEi||eiVal;
+        const match=regNorm.toLowerCase()===eiNorm.toLowerCase();
         const isProvisional=rawClass.toLowerCase().includes('provisional')||rawStatus.toLowerCase().includes('provisional');
         row.flags.status={
           match,eiVal,regVal:rawStatus,regClass:rawClass,translated,
-          isProvisional,realChange:!match&&!(translated==='Pending'&&eiVal==='Pending')
+          isProvisional,realChange:!match&&!(translated==='Pending'&&eiNorm==='Pending')
         };
       }
 
