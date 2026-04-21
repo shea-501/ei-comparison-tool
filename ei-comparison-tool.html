@@ -118,7 +118,7 @@ tr:hover td{background:#f9f8f6}
     <div class="header-title">License Comparison Tool</div>
     <div class="header-sub" id="header-sub">Emerald Intelligence — Select a locale to begin</div>
   </div>
-  <div class="header-version">v9.0</div>
+  <div class="header-version">v9.1</div>
 </div>
 <div class="main">
 
@@ -261,10 +261,11 @@ tr:hover td{background:#f9f8f6}
       </select>
       <select id="filter-status" onchange="filterTable()">
         <option value="">All statuses</option>
-        <option value="active">Active only</option>
-        <option value="inactive">Inactive only</option>
-        <option value="pending">Pending only</option>
       </select>
+      <select id="filter-ltype" onchange="filterTable()">
+        <option value="">All license types</option>
+      </select>
+      <button id="btn-new-cols" onclick="toggleNewCols()" style="font-size:12px;font-family:var(--font);padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);cursor:pointer">Show all columns</button>
     </div>
     <div class="tab-content active" id="tc-new"><div class="tbl-wrap"><table id="tbl-new"></table></div></div>
     <div class="tab-content" id="tc-removed"><div class="tbl-wrap"><table id="tbl-removed"></table></div></div>
@@ -625,6 +626,7 @@ let eiData=[],regData=[],eiCols=[],regCols=[];
 let supplFiles=[null,null,null,null];
 let results={newRecs:[],removed:[],changed:[],expiring:[]};
 let activeTab='new';
+let newTabShowAll=false;
 const TODAY=new Date('2026-04-06');
 
 /* ============================================================
@@ -984,16 +986,82 @@ function runComparison(){
   document.getElementById('results-section').style.display='block';
   document.getElementById('results-section').scrollIntoView({behavior:'smooth',block:'start'});
   renderNewTable();renderRemovedTable();renderChangedTable(changed);renderExpiringTable(expiring);
+  populateStatusFilter();
+  populateLtypeFilter();
   switchTab('new');
+}
+
+/* ============================================================
+   NEW TAB COLUMN TOGGLE
+   ============================================================ */
+function toggleNewCols(){
+  newTabShowAll=!newTabShowAll;
+  document.getElementById('btn-new-cols').textContent=newTabShowAll?'Show key columns only':'Show all columns';
+  renderNewTable();
+  filterTable();
+}
+
+/* ============================================================
+   DYNAMIC LICENSE TYPE FILTER — populate from values present in results
+   ============================================================ */
+function populateLtypeFilter(){
+  const sel=document.getElementById('filter-ltype');
+  const prev=sel.value;
+  const values=new Set();
+  ['new','removed','changed','expiring'].forEach(tab=>{
+    const tbl=document.getElementById(`tbl-${tab}`);
+    if(!tbl) return;
+    [...tbl.querySelectorAll('tbody tr')].forEach(tr=>{
+      const v=tr.dataset.ltype;
+      if(v) values.add(v);
+    });
+  });
+  const sorted=[...values].sort((a,b)=>a.localeCompare(b));
+  sel.innerHTML='<option value="">All license types</option>'+
+    sorted.map(v=>`<option value="${v}">${v}</option>`).join('');
+  sel.value=(prev&&values.has(prev))?prev:'';
+}
+
+/* ============================================================
+   DYNAMIC STATUS FILTER — populate from buckets present in results
+   ============================================================ */
+function populateStatusFilter(){
+  const sel=document.getElementById('filter-status');
+  const prev=sel.value;
+  const buckets=new Set();
+  ['new','removed','changed','expiring'].forEach(tab=>{
+    const tbl=document.getElementById(`tbl-${tab}`);
+    if(!tbl) return;
+    [...tbl.querySelectorAll('tbody tr')].forEach(tr=>{
+      const b=tr.dataset.status;
+      if(b) buckets.add(b);
+    });
+  });
+  const labels={active:'Active only',pending:'Pending only',inactive:'Inactive only',other:'Other'};
+  const order=['active','pending','inactive','other'];
+  sel.innerHTML='<option value="">All statuses</option>'+
+    order.filter(b=>buckets.has(b)).map(b=>`<option value="${b}">${labels[b]}</option>`).join('');
+  sel.value=(prev&&buckets.has(prev))?prev:'';
 }
 
 /* ============================================================
    RENDER TABLES
    ============================================================ */
+function getNewTabCols(rows){
+  const allCols=Object.keys(rows[0]).filter(c=>!c.startsWith('_'));
+  if(newTabShowAll) return allCols;
+  const keyOrder=['sel-reg-key','sel-reg-name','sel-reg-status','sel-reg-addr','sel-reg-ltype','sel-reg-exp'];
+  const keyCols=[];
+  keyOrder.forEach(id=>{
+    const v=document.getElementById(id)?.value;
+    if(v&&allCols.includes(v)&&!keyCols.includes(v)) keyCols.push(v);
+  });
+  return keyCols.length?keyCols:allCols;
+}
 function renderNewTable(){
   const rows=results.newRecs;
   if(!rows.length){document.getElementById('tbl-new').innerHTML='<tr><td class="empty-state">No new records found</td></tr>';return;}
-  const cols=Object.keys(rows[0]).filter(c=>!c.startsWith('_'));
+  const cols=getNewTabCols(rows);
   document.getElementById('tbl-new').innerHTML=
     '<thead><tr>'+cols.map(c=>`<th>${c}</th>`).join('')+'</tr></thead>'+
     '<tbody>'+rows.map(r=>{
@@ -1003,7 +1071,10 @@ function renderNewTable(){
       const rawCls=regClassCol?norm(r[regClassCol]):'';
       const translated=translateStatus(rawSt,rawCls)||rawSt;
       const statusBucket=getStatusBucket(translated);
-      return'<tr data-status="'+statusBucket+'">'+cols.map(c=>`<td>${norm(r[c])}</td>`).join('')+'</tr>';
+      const regLtypeCol=document.getElementById('sel-reg-ltype').value;
+      const rawLt=regLtypeCol?norm(r[regLtypeCol]):'';
+      const ltypeVal=(translateLicenseType(rawLt)||rawLt).replace(/"/g,'');
+      return'<tr data-status="'+statusBucket+'" data-ltype="'+ltypeVal+'">'+cols.map(c=>`<td>${norm(r[c])}</td>`).join('')+'</tr>';
     }).join('')+'</tbody>';
 }
 function renderRemovedTable(){
@@ -1016,7 +1087,9 @@ function renderRemovedTable(){
       const eiStatusCol=document.getElementById('sel-ei-status').value;
       const rawSt=eiStatusCol?norm(r[eiStatusCol]):'';
       const statusBucket=getStatusBucket(rawSt);
-      return'<tr data-status="'+statusBucket+'">'+cols.map(c=>`<td>${norm(r[c])}</td>`).join('')+'</tr>';
+      const eiLtypeCol=document.getElementById('sel-ei-ltype').value;
+      const ltypeVal=(eiLtypeCol?norm(r[eiLtypeCol]):'').replace(/"/g,'');
+      return'<tr data-status="'+statusBucket+'" data-ltype="'+ltypeVal+'">'+cols.map(c=>`<td>${norm(r[c])}</td>`).join('')+'</tr>';
     }).join('')+'</tbody>';
 }
 
@@ -1102,7 +1175,8 @@ function renderChangedTable(rows){
     if(r.flags.ltype?.flagged) flags.push('ltype');
     if(r.flags.exp?.flagged||r.flags.exp?.expiredButActive) flags.push('exp');
 
-    return`<tr data-flags="${flags.join(',')}" data-status="${r.flags.status?getStatusBucket(r.flags.status.eiVal):''}">
+    const chgLtype=(r.flags.ltype?.eiVal||'').replace(/"/g,'');
+    return`<tr data-flags="${flags.join(',')}" data-status="${r.flags.status?getStatusBucket(r.flags.status.eiVal):''}" data-ltype="${chgLtype}">
       <td style="font-weight:600;font-family:var(--font-mono);font-size:11px">${r.key}</td>
       <td>${addrCell}</td><td>${nameCell}</td><td>${statusCell}</td><td>${ltypeCell}</td><td>${expCell}</td><td>${enrichCell}</td><td>${otherCell}</td>
     </tr>`;
@@ -1125,7 +1199,8 @@ function renderExpiringTable(rows){
         ?`<span class="exp-warn">Within 90 days</span>`
         :`<span class="exp-soft">Within 180 days</span>`;
     const daysLabel=r.daysLeft<0?`<span class="exp-hard">${Math.abs(r.daysLeft)}d overdue</span>`:`<span>${r.daysLeft}d</span>`;
-    return`<tr data-severity="${r.severity}" data-status="${getStatusBucket(norm(r.rec[eiStatus]))}">
+    const expLtype=norm(r.rec[eiLtype]).replace(/"/g,'');
+    return`<tr data-severity="${r.severity}" data-status="${getStatusBucket(norm(r.rec[eiStatus]))}" data-ltype="${expLtype}">
       <td style="font-weight:600;font-family:var(--font-mono);font-size:11px">${norm(r.rec[eiKey])}</td>
       <td>${norm(r.rec[eiName])}</td>
       <td>${norm(r.rec[eiLtype])}</td>
@@ -1155,12 +1230,18 @@ function switchTab(tab){
   // Show status filter only if a status column is mapped
   const hasStatus=!!(document.getElementById('sel-ei-status').value||document.getElementById('sel-reg-status').value);
   document.getElementById('filter-status').style.display=hasStatus?'':'none';
+  // Show license type filter only if a license type column is mapped
+  const hasLtype=!!(document.getElementById('sel-ei-ltype').value||document.getElementById('sel-reg-ltype').value);
+  document.getElementById('filter-ltype').style.display=hasLtype?'':'none';
+  // Show "all columns" toggle only on the New tab
+  document.getElementById('btn-new-cols').style.display=(tab==='new')?'':'none';
   filterTable();
 }
 function filterTable(){
   const q=document.getElementById('search-input').value.toLowerCase();
   const ff=document.getElementById('filter-flag').value;
   const sf=document.getElementById('filter-status').value;
+  const lt=document.getElementById('filter-ltype').value;
   // Apply filters across ALL tabs, not just the active one
   ['new','removed','changed','expiring'].forEach(tab=>{
     const tbl=document.getElementById(`tbl-${tab}`);
@@ -1169,13 +1250,14 @@ function filterTable(){
       const tok=!q||tr.textContent.toLowerCase().includes(q);
       const fok=!ff||(tr.dataset.flags||'').includes(ff)||(tr.dataset.severity||'').includes(ff);
       const sok=!sf||!tr.dataset.status||(tr.dataset.status===sf);
-      tr.style.display=tok&&fok&&sok?'':'none';
+      const ltok=!lt||!tr.dataset.ltype||(tr.dataset.ltype===lt);
+      tr.style.display=tok&&fok&&sok&&ltok?'':'none';
     });
   });
   // Update counts based on visible rows
   const count=tab=>{const t=document.getElementById(`tbl-${tab}`);return t?[...t.querySelectorAll('tbody tr')].filter(r=>r.style.display!=='none').length:0;};
   const nNew=count('new'),nRem=count('removed'),nChg=count('changed'),nExp=count('expiring');
-  const isFiltered=!!(q||ff||sf);
+  const isFiltered=!!(q||ff||sf||lt);
   document.getElementById('s-new').textContent=nNew;
   document.getElementById('s-removed').textContent=nRem;
   document.getElementById('s-changed').textContent=nChg;
