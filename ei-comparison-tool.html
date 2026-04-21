@@ -120,7 +120,7 @@ tr.row-active:hover td{background:#e6f5ee}
     <div class="header-title">License Comparison Tool</div>
     <div class="header-sub" id="header-sub">Emerald Intelligence — Select a locale to begin</div>
   </div>
-  <div class="header-version">v9.2</div>
+  <div class="header-version">v9.3</div>
 </div>
 <div class="main">
 
@@ -177,6 +177,10 @@ tr.row-active:hover td{background:#e6f5ee}
       <div id="locale-dnl-count" style="color:var(--red)"></div>
     </div>
     <div id="locale-ref-badge" style="display:none;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600"></div>
+  </div>
+  <div id="locale-sources" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;font-weight:500;text-transform:uppercase;letter-spacing:.04em">Sources</div>
+    <div id="locale-sources-list" style="display:flex;flex-wrap:wrap;gap:14px;font-size:12px"></div>
   </div>
 </div>
 
@@ -430,6 +434,20 @@ function onLocaleChange(){
   } else {
     badge.textContent = '⚠ Dictionary data only';
     badge.style.cssText = 'display:inline-block;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;background:#FEF0D6;color:#854f0b;border:1px solid #FACF85';
+  }
+
+  // Render sources list if the locale has any
+  const sourcesBox = document.getElementById('locale-sources');
+  const sourcesList = document.getElementById('locale-sources-list');
+  const sources = Array.isArray(info.sources) ? info.sources : [];
+  if(sources.length){
+    sourcesList.innerHTML = sources.map(s =>
+      `<a href="${s.url}" target="_blank" rel="noopener noreferrer" style="color:var(--highlight);text-decoration:none;border-bottom:1px solid var(--border-mid);padding-bottom:1px">↗ ${s.label}</a>`
+    ).join('');
+    sourcesBox.style.display = 'block';
+  } else {
+    sourcesList.innerHTML = '';
+    sourcesBox.style.display = 'none';
   }
 }
 

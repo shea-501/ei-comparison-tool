@@ -8660,7 +8660,17 @@
       "yearMedLaw": 2016.0,
       "yearAULaw": 2023.0,
       "yearAUSales": 2024.0,
-      "summary": "[Ohio Summary]"
+      "summary": "[Ohio Summary]",
+      "sources": [
+        {
+          "label": "OH raw regulator scrapes (Google Drive)",
+          "url": "https://drive.google.com/drive/folders/14cy6ALY17stlHnR1EMgLglDEGYGUeAqz"
+        },
+        {
+          "label": "EI Trevor export (live Google Sheet)",
+          "url": "https://docs.google.com/spreadsheets/d/1LdmrjhbZ6aNhXKF8yreCyvJgXyfkIQGE-9qtlvxELho/edit"
+        }
+      ]
     },
     "OK-Oklahoma": {
       "commonName": "Oklahoma",
