@@ -111,6 +111,9 @@ tr.row-active:hover td{background:#e6f5ee}
 .scope-check{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--text-muted);cursor:pointer;padding:6px 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);transition:all .15s;user-select:none}
 .scope-check:has(input:checked){background:#EAF3DE;border-color:#C0DD97;color:#27500A}
 .scope-check input{accent-color:var(--green);cursor:pointer}
+.type-chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--text-muted);cursor:pointer;padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);transition:all .15s;user-select:none}
+.type-chip:has(input:checked){background:#EAF3DE;border-color:#C0DD97;color:#27500A}
+.type-chip input{accent-color:var(--green);cursor:pointer;margin:0}
 </style>
 </head>
 <body>
@@ -120,7 +123,7 @@ tr.row-active:hover td{background:#e6f5ee}
     <div class="header-title">License Comparison Tool</div>
     <div class="header-sub" id="header-sub">Emerald Intelligence — Select a locale to begin</div>
   </div>
-  <div class="header-version">v9.4</div>
+  <div class="header-version">v9.5</div>
 </div>
 <div class="main">
 
@@ -220,12 +223,20 @@ tr.row-active:hover td{background:#e6f5ee}
   <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:14px">
     <div id="map-ltype" style="display:none">
       <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:7px">License type <span class="info-pill">TaxEnum aware</span></div>
-      <div class="map-grid"><div><div class="map-label">EI DB</div><select id="sel-ei-ltype"></select></div><div class="map-arrow">↔</div><div><div class="map-label">Regulator</div><select id="sel-reg-ltype"></select></div></div>
+      <div class="map-grid"><div><div class="map-label">EI DB</div><select id="sel-ei-ltype" onchange="populateTypeFilter()"></select></div><div class="map-arrow">↔</div><div><div class="map-label">Regulator</div><select id="sel-reg-ltype" onchange="populateTypeFilter()"></select></div></div>
     </div>
     <div id="map-exp" style="display:none">
       <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:7px">Expiration date</div>
       <div class="map-grid"><div><div class="map-label">EI DB</div><select id="sel-ei-exp"></select></div><div class="map-arrow">↔</div><div><div class="map-label">Regulator</div><select id="sel-reg-exp"></select></div></div>
     </div>
+  </div>
+  <div id="type-filter-section" style="display:none;margin-bottom:14px">
+    <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:8px">Restrict to license types <span style="color:var(--text-faint);font-weight:400;font-size:10px">(optional — leave all checked to compare everything)</span></div>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <button type="button" onclick="selectAllTypes(true)" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);cursor:pointer">Select all</button>
+      <button type="button" onclick="selectAllTypes(false)" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);cursor:pointer">Clear</button>
+    </div>
+    <div id="type-filter-list" style="display:flex;flex-wrap:wrap;gap:6px"></div>
   </div>
   <div class="divider"></div>
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
@@ -790,6 +801,52 @@ function toggleScope(){
   document.getElementById('thresh-addr').style.display=document.getElementById('chk-addr').checked?'':'none';
   document.getElementById('thresh-name').style.display=document.getElementById('chk-name').checked?'':'none';
   document.getElementById('thresh-exp').style.display=document.getElementById('chk-exp').checked?'':'none';
+  populateTypeFilter();
+}
+
+/* ============================================================
+   PRE-COMPARISON LICENSE TYPE FILTER
+   Populates chip-checkboxes from distinct license types in the
+   loaded data. Only shown when ltype scope is on and at least one
+   ltype column is mapped. Applied in runComparison() to restrict
+   both eiData and regData before the diff runs.
+   ============================================================ */
+function populateTypeFilter(){
+  const section=document.getElementById('type-filter-section');
+  const on=document.getElementById('chk-ltype').checked;
+  const eiLtypeCol=document.getElementById('sel-ei-ltype').value;
+  const regLtypeCol=document.getElementById('sel-reg-ltype').value;
+  if(!on||(!eiLtypeCol&&!regLtypeCol)||(!eiData.length&&!regData.length)){
+    section.style.display='none';
+    document.getElementById('type-filter-list').innerHTML='';
+    return;
+  }
+  // Preserve prior selection so the list can be rebuilt (e.g. on scope retoggle) without losing the user's picks
+  const prior=new Set();
+  let hadPriorList=false;
+  document.querySelectorAll('#type-filter-list input').forEach(inp=>{
+    hadPriorList=true;
+    if(inp.checked) prior.add(inp.value);
+  });
+  // Collect distinct types, using EI-normalized form for regulator values so duplicates collapse
+  const types=new Set();
+  if(eiLtypeCol) eiData.forEach(r=>{const v=norm(r[eiLtypeCol]);if(v) types.add(v);});
+  if(regLtypeCol) regData.forEach(r=>{
+    const raw=norm(r[regLtypeCol]);
+    if(!raw) return;
+    types.add(translateLicenseType(raw)||raw);
+  });
+  const sorted=[...types].sort((a,b)=>a.localeCompare(b));
+  const list=document.getElementById('type-filter-list');
+  list.innerHTML=sorted.map(t=>{
+    const safe=t.replace(/"/g,'&quot;');
+    const checked=!hadPriorList||prior.has(t)?'checked':'';
+    return`<label class="type-chip"><input type="checkbox" value="${safe}" ${checked}> ${t}</label>`;
+  }).join('');
+  section.style.display=sorted.length?'block':'none';
+}
+function selectAllTypes(flag){
+  document.querySelectorAll('#type-filter-list input').forEach(inp=>{inp.checked=!!flag;});
 }
 
 /* ============================================================
@@ -852,7 +909,26 @@ function runComparison(){
   const nameT=parseInt(document.getElementById('name-threshold').value);
   const expDays=parseInt(document.getElementById('exp-days').value)||180;
 
-  const enrichedReg=mergeSupplementals(regData,regKey);
+  // Pre-comparison license type filter — restrict both sides to the selected types before the diff runs.
+  // Uses EI-normalized form for regulator values so one chip matches both sides when translation maps hit.
+  let eiScoped=eiData, regScoped=regData;
+  const typeInputs=document.querySelectorAll('#type-filter-list input');
+  if(doLtype&&typeInputs.length){
+    const selectedTypes=new Set();
+    typeInputs.forEach(inp=>{if(inp.checked) selectedTypes.add(inp.value);});
+    if(selectedTypes.size>0&&selectedTypes.size<typeInputs.length){
+      const eiLtypeCol=document.getElementById('sel-ei-ltype').value;
+      const regLtypeCol=document.getElementById('sel-reg-ltype').value;
+      if(eiLtypeCol) eiScoped=eiData.filter(r=>selectedTypes.has(norm(r[eiLtypeCol])));
+      if(regLtypeCol) regScoped=regData.filter(r=>{
+        const raw=norm(r[regLtypeCol]);
+        if(!raw) return false;
+        return selectedTypes.has(translateLicenseType(raw)||raw);
+      });
+    }
+  }
+
+  const enrichedReg=mergeSupplementals(regScoped,regKey);
 
   // Suppress {DO NOT LOAD} records from regulator data
   const regStatus2=document.getElementById('sel-reg-status').value;
@@ -863,15 +939,15 @@ function runComparison(){
   const dnlCount = enrichedReg.length - suppressed.length;
 
   const eiMap=new Map();
-  eiData.forEach(r=>eiMap.set(normLicenseKey(r[eiKey]),r));
+  eiScoped.forEach(r=>eiMap.set(normLicenseKey(r[eiKey]),r));
   const regMap=new Map();
   suppressed.forEach(r=>regMap.set(normLicenseKey(r[regKey]),r));
 
   const newRecs=[],removed=[],changed=[],expiring=[];
   const suppCols=new Set(['_MMCP','_EXP','_DBA','_SRC']);
 
-  // Expiring Soon — from EI directly
-  eiData.forEach(r=>{
+  // Expiring Soon — from EI directly (scoped to selected types when pre-filter is active)
+  eiScoped.forEach(r=>{
     const expVal=eiExp?norm(r[eiExp]):null;
     const supExpVal=r['_EXP']?norm(r['_EXP']):null;
     const expDate=parseDate(expVal)||parseDate(supExpVal);
@@ -1106,7 +1182,8 @@ function renderNewTable(){
       const statusBucket=getStatusBucket(trueTrans||rawSt);
       const regLtypeCol=document.getElementById('sel-reg-ltype').value;
       const rawLt=regLtypeCol?norm(r[regLtypeCol]):'';
-      const ltypeVal=(translateLicenseType(rawLt)||rawLt).replace(/"/g,'');
+      // Use the raw regulator value so the filter dropdown matches what's shown in the License Type column
+      const ltypeVal=rawLt.replace(/"/g,'');
       const rowCls=trueTrans==='Active'?'row-active':'';
       return'<tr class="'+rowCls+'" data-status="'+statusBucket+'" data-ltype="'+ltypeVal+'">'+cols.map(c=>{
         if(c==='__ei_status__') return`<td>${trueTrans||'<span style="color:var(--text-faint)">—</span>'}</td>`;
