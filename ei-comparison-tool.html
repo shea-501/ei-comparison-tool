@@ -123,7 +123,7 @@ tr.row-active:hover td{background:#e6f5ee}
     <div class="header-title">License Comparison Tool</div>
     <div class="header-sub" id="header-sub">Emerald Intelligence — Select a locale to begin</div>
   </div>
-  <div class="header-version">v9.7</div>
+  <div class="header-version">v9.8</div>
 </div>
 <div class="main">
 
@@ -290,6 +290,7 @@ tr.row-active:hover td{background:#e6f5ee}
     <div class="tab-content" id="tc-expiring"><div class="tbl-wrap"><table id="tbl-expiring"></table></div></div>
     <div class="footer-bar">
       <button onclick="exportTab()">Export active tab</button>
+      <button onclick="exportReport()">Export comparison report</button>
       <button class="btn-primary" onclick="exportAll()">Export all tabs (.xlsx)</button>
     </div>
   </div>
@@ -655,7 +656,7 @@ function getStatusBucket(val){
    ============================================================ */
 let eiData=[],regData=[],eiCols=[],regCols=[];
 let supplFiles=[null,null,null,null];
-let results={newRecs:[],removed:[],changed:[],expiring:[]};
+let results={newRecs:[],removed:[],changed:[],expiring:[],matched:[]};
 let activeTab='new';
 let newTabShowAll=false;
 const TODAY=new Date('2026-04-06');
@@ -943,7 +944,7 @@ function runComparison(){
   const regMap=new Map();
   suppressed.forEach(r=>regMap.set(normLicenseKey(r[regKey]),r));
 
-  const newRecs=[],removed=[],changed=[],expiring=[];
+  const newRecs=[],removed=[],changed=[],expiring=[],matched=[];
   const suppCols=new Set(['_MMCP','_EXP','_DBA','_SRC']);
 
   // Expiring Soon — from EI directly (scoped to selected types when pre-filter is active)
@@ -1056,13 +1057,15 @@ function runComparison(){
         (row.flags.ltype?.flagged)||
         (row.flags.exp?.flagged||row.flags.exp?.expiredButActive)||
         Object.keys(row.otherDiffs).length>0;
+      row.hasChange=hasChange;
+      matched.push(row);
       if(hasChange) changed.push(row);
     }
   });
 
   eiMap.forEach((rec,key)=>{if(key&&key!=='nan'&&!regMap.has(key)) removed.push(rec);});
 
-  results={newRecs,removed,changed,expiring};
+  results={newRecs,removed,changed,expiring,matched};
   // Show suppression note if any records were filtered
   const dnlNote = document.getElementById('dnl-note') || (() => {
     const d = document.createElement('div');
@@ -1493,6 +1496,96 @@ function exportTab(){
   XLSX.utils.book_append_sheet(wb,ws,activeTab);
   XLSX.writeFile(wb,`ei_comparison_${activeTab}_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
+/* ============================================================
+   SIDE-BY-SIDE COMPARISON REPORT
+   Joins EI and regulator data by license # and emits one row per
+   license with paired values and scoring. Includes matched
+   (perfect + changed), regulator-only (new), and EI-only (missing)
+   rows so the whole comparison is visible in one sheet.
+   ============================================================ */
+function buildSideBySideRows(){
+  const eiKey=document.getElementById('sel-ei-key').value;
+  const regKey=document.getElementById('sel-reg-key').value;
+  const eiName=document.getElementById('sel-ei-name').value;
+  const regName=document.getElementById('sel-reg-name').value;
+  const eiAddr=document.getElementById('sel-ei-addr').value;
+  const regAddr=document.getElementById('sel-reg-addr').value;
+  const eiStatus=document.getElementById('sel-ei-status').value;
+  const regStatus=document.getElementById('sel-reg-status').value;
+  const regClass=document.getElementById('sel-reg-class').value;
+  const eiLtype=document.getElementById('sel-ei-ltype').value;
+  const regLtype=document.getElementById('sel-reg-ltype').value;
+  const eiExp=document.getElementById('sel-ei-exp').value;
+  const regExp=document.getElementById('sel-reg-exp').value;
+
+  const headers=['License #','Match Status',
+    'EI Name','Regulator Name','Name Score',
+    'EI Address','Regulator Address','Address Score',
+    'EI Status','Regulator Status','EI Status (Translated)','Status Match',
+    'EI License Type','Regulator License Type','License Type Match',
+    'EI Expiration','Regulator Expiration','Expiration Flag',
+    'MMCP #','Source File'];
+  const rows=[];
+
+  // Matched rows (joined on license #) — both perfect matches and changed
+  (results.matched||[]).forEach(r=>{
+    const status=r.hasChange?'Changed':'Perfect Match';
+    const exp=r.flags.exp;
+    const expFlag=exp?(exp.expiredButActive?'Expired + Active':(exp.flagged?'Flagged':'OK')):'';
+    rows.push([
+      r.key, status,
+      eiName?norm(r.eiRec[eiName]):'', regName?norm(r.regRec[regName]):'', r.flags.name?.score!=null?r.flags.name.score+'%':'',
+      eiAddr?norm(r.eiRec[eiAddr]):'', regAddr?norm(r.regRec[regAddr]):'', r.flags.addr?.combined!=null?r.flags.addr.combined+'%':'',
+      eiStatus?norm(r.eiRec[eiStatus]):'', regStatus?norm(r.regRec[regStatus]):'', r.flags.status?.translated||'', r.flags.status?(r.flags.status.match?'Match':'Mismatch'):'',
+      eiLtype?norm(r.eiRec[eiLtype]):'', regLtype?norm(r.regRec[regLtype]):'', r.flags.ltype?(r.flags.ltype.match?'Match':'Mismatch'):'',
+      eiExp?norm(r.eiRec[eiExp]):'', regExp?norm(r.regRec[regExp]):'', expFlag,
+      norm(r.enriched?._MMCP||''), norm(r.enriched?._SRC||'')
+    ]);
+  });
+
+  // Regulator-only rows (New in regulator) — EI side blank
+  (results.newRecs||[]).forEach(rec=>{
+    const rawSt=regStatus?norm(rec[regStatus]):'';
+    const rawCls=regClass?norm(rec[regClass]):'';
+    const translated=translateStatus(rawSt,rawCls)||'';
+    rows.push([
+      norm(rec[regKey]), 'Regulator only (New)',
+      '', regName?norm(rec[regName]):'', '',
+      '', regAddr?norm(rec[regAddr]):'', '',
+      '', rawSt, translated, '',
+      '', regLtype?norm(rec[regLtype]):'', '',
+      '', regExp?norm(rec[regExp]):'', '',
+      norm(rec['_MMCP']||''), norm(rec['_SRC']||'')
+    ]);
+  });
+
+  // EI-only rows (Missing from regulator) — regulator side blank
+  (results.removed||[]).forEach(rec=>{
+    rows.push([
+      norm(rec[eiKey]), 'EI only (Missing)',
+      eiName?norm(rec[eiName]):'', '', '',
+      eiAddr?norm(rec[eiAddr]):'', '', '',
+      eiStatus?norm(rec[eiStatus]):'', '', '', '',
+      eiLtype?norm(rec[eiLtype]):'', '', '',
+      eiExp?norm(rec[eiExp]):'', '', '',
+      '', ''
+    ]);
+  });
+
+  return[headers,...rows];
+}
+function exportReport(){
+  if(!results.matched||(!results.matched.length&&!results.newRecs.length&&!results.removed.length)){
+    alert('Run a comparison first.');
+    return;
+  }
+  const data=buildSideBySideRows();
+  if(data.length<2){alert('No data to export.');return;}
+  const ws=XLSX.utils.aoa_to_sheet(data),wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Side-by-side');
+  XLSX.writeFile(wb,`ei_comparison_report_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
 function exportAll(){
   const wb=XLSX.utils.book_new();
   [['New Records','new',buildNewRows()],
