@@ -124,7 +124,7 @@ tr.row-active:hover td{background:#e6f5ee}
     <div class="header-title">License Comparison Tool</div>
     <div class="header-sub" id="header-sub">Emerald Intelligence — Select a locale to begin</div>
   </div>
-  <div class="header-version">v9.9</div>
+  <div class="header-version">v9.10</div>
 </div>
 <div class="main">
 
@@ -694,7 +694,11 @@ function readFile(file,cb){
     const headers=[];
     const seen={};
     raw[0].forEach(h=>{
-      const k=(h||'').toString().replace(/\n/g,' ').trim();
+      // Collapse any run of whitespace (including \r, \n, tabs, multiple spaces) into one space.
+      // Carriage returns in column names are especially important: HTML normalizes CR→LF inside
+      // <option value> attributes, so a header like "Dual-Use License\r Number" would be read back
+      // from the select as "Dual-Use License\n Number" and fail to index into the row object.
+      const k=(h||'').toString().replace(/\s+/g,' ').trim();
       if(!k){headers.push('__empty__');return;}
       if(seen[k]===undefined){seen[k]=0;headers.push(k);}
       else{seen[k]++;headers.push(k+'__'+seen[k]);}
