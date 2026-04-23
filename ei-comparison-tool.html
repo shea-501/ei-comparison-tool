@@ -102,7 +102,8 @@ tr.row-active:hover td{background:#e6f5ee}
 .enrich-item{font-size:11px;margin-bottom:2px}
 .enrich-key{color:var(--text-faint);font-size:10px}
 .info-pill{display:inline-block;font-size:10px;padding:1px 7px;border-radius:99px;background:#e8f2fb;color:#185fa5;margin-left:5px;font-weight:500}
-.footer-bar{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--border);background:var(--bg)}
+.footer-bar{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--border);background:var(--bg);flex-wrap:wrap}
+.report-filter-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 14px;border-top:1px solid var(--border);background:var(--bg);font-size:11px;color:var(--text-muted)}
 .footer-bar button{font-size:12px;font-family:var(--font);font-weight:500;padding:7px 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);cursor:pointer;transition:background .15s}
 .footer-bar button:hover{background:#eeecea}
 .btn-primary{background:var(--brand)!important;color:#fff!important;border-color:var(--brand)!important}
@@ -123,7 +124,7 @@ tr.row-active:hover td{background:#e6f5ee}
     <div class="header-title">License Comparison Tool</div>
     <div class="header-sub" id="header-sub">Emerald Intelligence — Select a locale to begin</div>
   </div>
-  <div class="header-version">v9.8</div>
+  <div class="header-version">v9.9</div>
 </div>
 <div class="main">
 
@@ -288,6 +289,13 @@ tr.row-active:hover td{background:#e6f5ee}
     <div class="tab-content" id="tc-removed"><div class="tbl-wrap"><table id="tbl-removed"></table></div></div>
     <div class="tab-content" id="tc-changed"><div class="tbl-wrap"><table id="tbl-changed"></table></div></div>
     <div class="tab-content" id="tc-expiring"><div class="tbl-wrap"><table id="tbl-expiring"></table></div></div>
+    <div class="report-filter-bar">
+      <span style="font-weight:500">Report includes:</span>
+      <label class="type-chip"><input type="checkbox" checked data-report="perfect"> Perfect Match</label>
+      <label class="type-chip"><input type="checkbox" checked data-report="changed"> Changed</label>
+      <label class="type-chip"><input type="checkbox" checked data-report="new"> New (regulator only)</label>
+      <label class="type-chip"><input type="checkbox" checked data-report="missing"> Missing (EI only)</label>
+    </div>
     <div class="footer-bar">
       <button onclick="exportTab()">Export active tab</button>
       <button onclick="exportReport()">Export comparison report</button>
@@ -1504,6 +1512,9 @@ function exportTab(){
    rows so the whole comparison is visible in one sheet.
    ============================================================ */
 function buildSideBySideRows(){
+  // Read chip-checkbox filter state — any unchecked category is excluded from the report
+  const inc=cat=>document.querySelector(`#report-filter-bar input[data-report="${cat}"]`)?.checked!==false;
+  const incPerfect=inc('perfect'),incChanged=inc('changed'),incNew=inc('new'),incMissing=inc('missing');
   const eiKey=document.getElementById('sel-ei-key').value;
   const regKey=document.getElementById('sel-reg-key').value;
   const eiName=document.getElementById('sel-ei-name').value;
@@ -1529,6 +1540,7 @@ function buildSideBySideRows(){
 
   // Matched rows (joined on license #) — both perfect matches and changed
   (results.matched||[]).forEach(r=>{
+    if(r.hasChange?!incChanged:!incPerfect) return;
     const status=r.hasChange?'Changed':'Perfect Match';
     const exp=r.flags.exp;
     const expFlag=exp?(exp.expiredButActive?'Expired + Active':(exp.flagged?'Flagged':'OK')):'';
@@ -1544,7 +1556,7 @@ function buildSideBySideRows(){
   });
 
   // Regulator-only rows (New in regulator) — EI side blank
-  (results.newRecs||[]).forEach(rec=>{
+  if(incNew) (results.newRecs||[]).forEach(rec=>{
     const rawSt=regStatus?norm(rec[regStatus]):'';
     const rawCls=regClass?norm(rec[regClass]):'';
     const translated=translateStatus(rawSt,rawCls)||'';
@@ -1560,7 +1572,7 @@ function buildSideBySideRows(){
   });
 
   // EI-only rows (Missing from regulator) — regulator side blank
-  (results.removed||[]).forEach(rec=>{
+  if(incMissing) (results.removed||[]).forEach(rec=>{
     rows.push([
       norm(rec[eiKey]), 'EI only (Missing)',
       eiName?norm(rec[eiName]):'', '', '',
@@ -1580,7 +1592,7 @@ function exportReport(){
     return;
   }
   const data=buildSideBySideRows();
-  if(data.length<2){alert('No data to export.');return;}
+  if(data.length<2){alert('No rows match the selected categories. Check the "Report includes" chips.');return;}
   const ws=XLSX.utils.aoa_to_sheet(data),wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Side-by-side');
   XLSX.writeFile(wb,`ei_comparison_report_${new Date().toISOString().slice(0,10)}.xlsx`);
